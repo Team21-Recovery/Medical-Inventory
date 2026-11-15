@@ -150,12 +150,57 @@ dialog::backdrop{background:rgba(10,15,20,.55)}
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:999px;font-weight:600;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20;max-width:90vw;text-align:center}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
+
+.bdot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:7px;vertical-align:-1px;flex:0 0 auto;box-shadow:0 0 0 2px rgba(255,255,255,.85)}
+.tabs button[aria-selected="true"] .bdot{width:14px;height:14px}
+.ctx{background:#0F7C7C;color:#fff}
+.ctx-in{max-width:760px;margin:0 auto;padding:8px 16px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.ctx-in b{font:700 20px/1.1 "Barlow Condensed","Arial Narrow",sans-serif}
+.ctx-in span{font-size:14px;font-weight:600;opacity:.95}
+.boxcard{border:0;border-top:8px solid var(--bc)}
+.boxtitle{display:flex;align-items:center}
+.boxtitle h2{font-size:32px;margin:0}
+.boxtitle .bdot{width:18px;height:18px;box-shadow:none}
+.boxcard .seg button[aria-pressed="true"]{background:var(--bc);color:#fff}
+.bhead{margin:12px 0 0;font-weight:700;display:flex;align-items:center}
+.bhead .bdot,.boxpick .bdot,.mini .bdot,.card .bdot{box-shadow:none}
+.boxpick label.on{border-color:var(--bc);background:color-mix(in srgb,var(--bc) 12%,transparent)}
+
+.tsel{font-size:13px}
+.tsel select{font:600 17px Barlow,sans-serif;padding:11px 10px;border:1.5px solid var(--bc,var(--court));border-radius:10px;background:var(--surface);color:var(--ink);width:100%}
+.target{min-width:56px}
+.target small{font-size:10px;white-space:nowrap}
+.target.bare{min-width:44px}
+.lvl{grid-template-columns:1fr auto}
+.lvl-in{display:flex;align-items:center;gap:6px}
+.lvl-in input{width:64px}
+.lvl-in small{color:var(--muted);font-size:13px;min-width:52px}
+
+.grid-sel{display:grid;grid-template-columns:minmax(110px,1fr) 2fr;gap:10px}
+.events{margin-top:12px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+details.ev{border-top:1px solid var(--line)}
+details.ev:first-child{border-top:0}
+details.ev summary{list-style:none;display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:12px;cursor:pointer}
+details.ev summary::-webkit-details-marker{display:none}
+details.ev summary::after{content:"+";font-weight:600;color:var(--court);margin-left:6px}
+details.ev[open] summary::after{content:"−"}
+details.ev[open]{background:var(--court-soft)}
+.ev-n{font-weight:600;flex:1}
+.ev-s{font-size:13px;color:var(--muted);white-space:nowrap}
+details.ev > .btn{margin:0 12px 12px;width:calc(100% - 24px)!important}
+.inst{background:var(--surface);border:1.5px solid var(--court);border-radius:10px;padding:12px;margin:0 12px 10px}
+
+.orgbar{max-width:760px;margin:0 auto;padding:2px 16px 6px;display:flex;gap:6px}
+.orgbar button{flex:1;border:1.5px solid rgba(255,255,255,.6);background:transparent;color:inherit;border-radius:999px;padding:7px 10px;font:700 16px "Barlow Condensed","Arial Narrow",sans-serif;cursor:pointer;letter-spacing:.3px}
+.orgbar button[aria-pressed="true"]{background:var(--court-ink);color:var(--court);border-color:var(--court-ink)}
 </style>
 </head>
 <body>
 <header>
   <div class="hrow"><h1>Medical Supply Inventory</h1><span class="sync" id="sync" role="status"></span></div>
+  <div class="orgbar" id="orgbar" role="group" aria-label="Organization"></div>
   <nav class="tabs" id="tabs" role="tablist" aria-label="Inventory areas"></nav>
+  <div class="ctx" id="ctx" hidden></div>
 </header>
 <main id="main"></main>
 <div class="bar"><div class="bar-in">
@@ -170,7 +215,7 @@ dialog::backdrop{background:rgba(10,15,20,.55)}
 
 <dialog id="connect" aria-labelledby="k-h"><div class="dlg">
   <h3 id="k-h">Medical Supply Inventory</h3>
-  <p>Enter your name and the team code you were given. Your counts are shared with the rest of the medical staff.</p>
+  <p>Enter your name and the team code you were given. Your counts are shared with the other Athletic Trainers.</p>
   <div class="grid2">
     <label class="field wide">Your name<input id="k-name" autocomplete="name"></label>
     <label class="field wide">Team code<input id="k-code" autocomplete="off" autocapitalize="off"></label>
@@ -182,10 +227,10 @@ dialog::backdrop{background:rgba(10,15,20,.55)}
   <h3 id="x-h">Add extra supply</h3>
   <div class="grid2">
     <label class="field wide">Item<input id="x-name" placeholder="e.g., Blister pads"></label>
-    <label class="field wide">Pack size<input id="x-note" placeholder="Optional, e.g., box of 50"></label>
+    <label class="field wide">Unit<input id="x-note" placeholder="Optional, e.g., box, roll, bottle"></label>
   </div>
   <label class="switch" style="display:flex;gap:8px;align-items:center;margin-top:12px;font-weight:600;font-size:15px"><input type="checkbox" id="x-in" style="width:20px;height:20px;accent-color:var(--court)"> Kept in every box</label>
-  <label class="field" id="x-lvl-wrap" style="margin-top:10px">Restock level per box<input id="x-level" type="number" inputmode="decimal" min="0" step="any" value="1"></label>
+  <label class="field" id="x-lvl-wrap" style="margin-top:10px">How many in a full box<input id="x-level" type="number" inputmode="decimal" min="0" step="any" value="1"></label>
   <p class="err" id="x-err"></p>
   <div class="dlg-actions"><button class="btn ghost" id="x-cancel">Cancel</button><button class="btn primary" id="x-save">Add item</button></div>
 </div></dialog>
@@ -201,33 +246,43 @@ const API_URL = "https://script.google.com/macros/s/AKfycbzwdShQsA-Y2pVpblWG4bk5
 const LOCAL = !API_URL;
 const LS = "msi-v2";
 
+const U={jar:["jar","jars"],box:["box","boxes"],bottle:["bottle","bottles"],ampule:["ampule","ampules"],
+  roll:["roll","rolls"],pack:["pack","packs"],tube:["tube","tubes"],sleeve:["sleeve","sleeves"],wrap:["wrap","wraps"]};
+// [id, name, full-box quantity, unit]
 const BOX_SECTIONS = [
   {title:"Wound care", items:[
-    ["2nd Skin","",1],["Band-Aids, 1×3 strips","300 per box",2],["Band-Aids, 4 wing","50 per box",2],
-    ["Band-Aids, knuckle","100 per box",2],["Eye drops","",1],["Gloves, large","",1],["Gloves, medium","",1],
-    ["Hand sanitizer","",1],["Hydrocortisone single packets","144 per",1],["Hydrogen peroxide","",1],
-    ["Isopropyl alcohol","",1],["Mastisol","",10],["Non-adherent pads","",1],["Nose plugs","",4],
-    ["NS New Sponges","",1],["Skin lube","",1],["Steri-Strips","",1],["Sterile 4x4 gauze","",1],
-    ["Triple antibiotic single packets","",1],["Wound wash saline spray","4 oz can",1]]},
-  {title:"Splints & bracing", items:[
-    ["36\" SAM splint","",3],["4-inch single","rolls",6],["6-inch double","rolls",4],["6-inch single","rolls",6],
-    ["Finger SAM splint","",12],["Foam","",1],["Horseshoe","pack of 12",3],["Slings","",2]]},
+    ["2nd-skin","2nd Skin",1,"jar"],["band-aids-1-3-strips","Bandaids – 1x3 Strips",2,"box","300 per box"],
+    ["band-aids-4-wing","Bandaids – 4 Wing",2,"box","50 per box"],["band-aids-knuckle","Bandaids – Knuckle",2,"box","100 per box"],
+    ["eye-drops","Eye Drops",1,"bottle"],["hand-sanitizer","Hand Sanitizer",1,"bottle"],
+    ["hydrocortisone-single-packets","Hydrocortisone Single Packets",1,"box","144 per box"],["hydrogen-peroxide","Hydrogen Peroxide",1,"bottle"],
+    ["isopropyl-alcohol","Isopropyl Alcohol",1,"bottle"],["mastisol","Mastisol",10,"ampule"],
+    ["non-adherent-pads","Non Adherent Pads",1,"box"],["nose-plugs","Nose Plugs",4,"roll"],
+    ["ns-new-sponges","NS New Sponges",1,"box"],["skin-lube","Skin Lube",1,"tube"],
+    ["steri-strips","Steri Strips",5,"sleeve"],["sterile-4x4-gauze","Sterile 4x4 Gauze",1,"box"],
+    ["triple-antibiotic-single-packets","Triple Antibiotic Single Packets",1,"box"],["wound-wash-saline-spray","Wound Wash Saline Spray",1,"bottle","4 oz can"]]},
   {title:"Tapes", items:[
-    ["1-inch Elastikon or AC Plus","12 rolls",1],["¼-inch tape","",1],["2-inch Elastikon or AC Plus","6 rolls",1],["Cover roll","",1]]},
+    ["cover-roll","Cover Roll",1,"roll"],["1-inch-elastikon-or-ac-plus","1-inch Elastikon",1,"box","12 rolls per box"],
+    ["inch-tape","¼-inch Tape",2,"box"],["2-inch-elastikon-or-ac-plus","2-inch Elastikon",1,"box","6 rolls per box"]]},
+  {title:"Splints & bracing", items:[
+    ["36-sam-splint","36\" SAM Splint",3,""],["4-inch-single","4-inch Single",6,"wrap"],
+    ["6-inch-double","6-inch Double",4,"wrap"],["6-inch-single","6-inch Single",6,"wrap"],
+    ["finger-sam-splint","Finger SAM Splint",12,""],["foam","Foam",1,"roll"],["horseshoe","Horseshoe",1,"pack","pack of 12"],["slings","Slings",2,""]]},
   {title:"Miscellaneous", items:[
-    ["Acetaminophen single-dose packs","250 packs",1],["Clorox wipes","",1],["Flexi-wrap","rolls",2],
-    ["Ibuprofen single-dose packs","250 packs",1],["Scissors","",1],["Shark","",1],
-    ["Stop Pain single-dose packs","",1],["Tampons","",1],["Tums single-dose packs","250 packs",1]]}
+    ["acetaminophen-single-dose-packs","Acetaminophen – Single Dose Packs",1,"box","250 packs per box"],["clorox-wipes","Cleaning Wipes",1,""],
+    ["gloves-large","Gloves – Large",1,"box"],["gloves-medium","Gloves – Medium",1,"box"],
+    ["ibuprofen-single-dose-packs","Ibuprofen – Single Dose Packs",1,"box","250 packs per box"],["scissors","Scissors",1,""],
+    ["shark","Shark",1,""],["stop-pain-single-dose-packs","Stop Pain – Single Dose Packs",1,"box"],
+    ["tampons","Tampons",1,"box"],["tums-single-dose-packs","Tums – Single Dose Packs",1,"box","250 packs per box"]]}
 ];
 const COURT_SECTION = {title:"Court-based supplies", court:true, items:[
-  ["1½\" white tape","boxes",{rate:2,per:70}],
-  ["EcoFlex 2\"","boxes",{rate:1.5,per:70}],
-  ["Ice bags","rolls",{ice:true,rate:1,days:3}],
-  ["Powerflex 1\"","boxes",{rate:1,per:70}],
-  ["Prewrap","boxes",{rate:0.5,per:100}]]};
+  ["1-white-tape","1½\" White Tape",{rate:2,per:70},"box"],
+  ["ecoflex-2","EcoFlex 2\"",{rate:1.5,per:70},"box"],
+  ["flexi-wrap","Flexi-wrap",{rate:0,per:70},"roll"],
+  ["ice-bags","Ice Bags",{ice:true,rate:1,days:3},"roll"],
+  ["powerflex-1","Powerflex 1\"",{rate:1,per:70},"box"],
+  ["prewrap","Prewrap",{rate:0.5,per:100},"box"]]};
 
-const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
-const mk=(sec,si)=>sec.items.map(([name,note,base])=>({id:slug(name),name,note,base,sec:si,court:!!sec.court,ice:!!(base&&base.ice)}));
+const mk=(sec,si)=>sec.items.map(([id,name,base,unit,note])=>({id,name,base,unit,note:note||"",sec:si,court:!!sec.court,ice:!!(base&&base.ice)}));
 const STD_BOX_ITEMS=BOX_SECTIONS.flatMap(mk);
 const COURT_ITEMS=mk(COURT_SECTION,"c");
 const ITEM={};[...STD_BOX_ITEMS,...COURT_ITEMS].forEach(i=>ITEM[i.id]=i);
@@ -235,10 +290,16 @@ const EXTRA_SECTION={title:"Extra supplies",extra:true};
 const EXCESS_SECTIONS=[COURT_SECTION,...BOX_SECTIONS,EXTRA_SECTION];
 const BOX_TAB_SECTIONS=[...BOX_SECTIONS,EXTRA_SECTION];
 
-const DEFAULT_CFG=()=>({extras:[],boxes:[{id:"b1",name:"Box 1"},{id:"b2",name:"Box 2"}],tournaments:[],targets:{},rates:{},comments:{}});
+const ORGS=["JVA","3Step"];
+const EVENTS={
+  "3Step":[["Boys Winter Invitational",2],["MEPL",2],["Bluegrass",2],["Players Championship",2]],
+  "JVA":[["The Reckoning",2],["Chi Town (Fall)",2],["Rock N Rumble",1],["Brew City",1],["Charm City",2],
+    ["World Challenge",3],["West Coast",1],["Portland",""],["Summerfest",1],["Windy City Round Up (June)",1],["Boys National Championship",2]]
+};
+const DEFAULT_CFG=()=>({extras:[],boxes:[{id:"b1",name:"Box 1",org:"JVA"},{id:"b2",name:"Box 2",org:"JVA"},{id:"b3",name:"Box 3",org:"JVA"},{id:"sA",name:"Box A",org:"3Step"},{id:"sB",name:"Box B",org:"3Step"},{id:"sC",name:"Box C",org:"3Step"}],tournaments:[],targets:{},rates:{},comments:{}});
 
 /* ---------- state ---------- */
-let L={name:"",code:"",admin:"",cfg:DEFAULT_CFG(),counts:{},pending:{},tab:"",phase:{},filter:"all",lastSync:0};
+let L={name:"",code:"",admin:"",cfg:DEFAULT_CFG(),counts:{},pending:{},tab:"",phase:{},filter:"all",lastSync:0,cur:"",plan:"all",showPast:false};
 try{const r=localStorage.getItem(LS);if(r){const p=JSON.parse(r);L=Object.assign(L,p);L.cfg=Object.assign(DEFAULT_CFG(),p.cfg||{});}}catch(e){}
 const persist=()=>{try{localStorage.setItem(LS,JSON.stringify(L))}catch(e){}};
 const isAdmin=()=>LOCAL||!!L.admin;
@@ -250,36 +311,138 @@ const K=(loc,item,phase)=>`${loc}|${item}|${phase}`;
 const get=(loc,item,phase)=>{const v=L.counts[K(loc,item,phase)];return has(v)?num(v):null;};
 const fmt=n=>Math.round(n*100)/100;
 function fmtDate(d){if(!d)return"";const[y,m,da]=d.split("-").map(Number);return new Date(y,m-1,da).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});}
+const todayStr=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;};
 
-const boxes=()=>L.cfg.boxes||[];
-const extras=()=>(L.cfg.extras||[]).map(x=>({id:x.id,name:x.name||"Unnamed item",note:x.note||"",base:x.inBoxes?num(x.level):0,sec:"x",extra:true,inBoxes:!!x.inBoxes}));
+/* ---------- units ---------- */
+function unitWord(it,n){
+  if(!it.unit)return "";
+  const u=U[it.unit];
+  return u?u[n===1?0:1]:it.unit;
+}
+const qty=(it,n)=>{const w=unitWord(it,n);return `${fmt(n)}${w?" "+w:""}`;};
+const unitPlural=it=>it.unit?(U[it.unit]?U[it.unit][1]:it.unit):"";
+
+/* ---------- boxes, items ---------- */
+const DEFAULT_3STEP=[{id:"sA",name:"Box A",org:"3Step"},{id:"sB",name:"Box B",org:"3Step"},{id:"sC",name:"Box C",org:"3Step"}];
+function allBoxes(){
+  if(!Array.isArray(L.cfg.boxes))L.cfg.boxes=[];
+  L.cfg.boxes.forEach(b=>{if(b.org!=="JVA"&&b.org!=="3Step")b.org="JVA";});
+  if(!L.cfg.boxes.some(b=>b.org==="3Step"))DEFAULT_3STEP.forEach(d=>L.cfg.boxes.push(Object.assign({},d)));
+  return L.cfg.boxes;
+}
+const boxes=(org)=>allBoxes().filter(b=>b.org===(org||curOrg()));
+const extras=()=>(L.cfg.extras||[]).map(x=>({id:x.id,name:x.name||"Unnamed item",unit:x.unit||x.note||"",base:x.inBoxes?num(x.level):0,sec:"x",extra:true,inBoxes:!!x.inBoxes}));
 const boxItemsAll=()=>[...STD_BOX_ITEMS,...extras().filter(x=>x.inBoxes)];
 const excessItemsAll=()=>[...COURT_ITEMS,...STD_BOX_ITEMS,...extras()];
 const itm=id=>ITEM[id]||extras().find(x=>x.id===id);
 const secTitle=it=>it.court?COURT_SECTION.title:it.extra?EXTRA_SECTION.title:BOX_SECTIONS[it.sec].title;
-const tours=()=>L.cfg.tournaments||[];
-const boxName=id=>(boxes().find(b=>b.id===id)||{}).name||"Box";
-const tourForBox=id=>tours().find(t=>(t.boxes||[]).includes(id));
+const BOX_COLORS=["#0F7C7C","#C2570A","#6B3FA0","#2E7D32","#B0306A","#8A6A00","#3D5A80","#9C3D2E"];
+const boxColor=id=>{const bx=allBoxes().find(b=>b.id===id);const i=bx?boxes(bx.org).indexOf(bx):0;return BOX_COLORS[(i<0?0:i)%BOX_COLORS.length];};
+const dot=id=>`<span class="bdot" style="background:${boxColor(id)}"></span>`;
+const boxName=id=>(allBoxes().find(b=>b.id===id)||{}).name||"Box";
 const target=it=>has(L.cfg.targets[it.id])?num(L.cfg.targets[it.id]):it.base;
 const rate=it=>Object.assign({},it.base,L.cfg.rates[it.id]||{});
+
+/* ---------- tournaments & sessions ---------- */
+const tours=()=>L.cfg.tournaments||[];
+const sortedTours=()=>tours().map((t,i)=>[t,i]).sort((a,b)=>{
+  const da=a[0].date||"9999",db=b[0].date||"9999";return da<db?-1:da>db?1:a[1]-b[1];}).map(x=>x[0]);
+const tourById=id=>tours().find(t=>t.id===id);
+const tourLabel=t=>t?`${t.name||"Untitled tournament"} (${t.date?fmtDate(t.date):"date not set"})`:"";
+const orgLabel=t=>t?`${t.org?t.org+": ":""}${tourLabel(t)}`:"";
+const isUpcoming=t=>!!t.date&&t.date>todayStr();
+const isPast=t=>!!t.date&&!isUpcoming(t);
+const tourOrg=t=>t&&ORGS.includes(t.org)?t.org:"JVA";
+const orgList=()=>ORGS;
+const curOrg=()=>ORGS.includes(L.org)?L.org:ORGS[0];
+const orgTours=()=>sortedTours().filter(t=>tourOrg(t)===curOrg());
+const excessLoc=(org)=>(org||curOrg())==="JVA"?"excess":"excess-3step";
+const isExcessLoc=loc=>loc==="excess"||loc==="excess-3step";
+const upcoming=(org)=>sortedTours().filter(t=>tourOrg(t)===(org||curOrg())&&isUpcoming(t));
+const LEGACY="legacy";
+const hasLegacy=(org)=>(org||curOrg())==="JVA"&&Object.keys(L.counts).some(k=>{const loc=k.split("|")[0];return !isExcessLoc(loc)&&!loc.includes("~");});
+const sessLoc=(tid,bid)=>tid===LEGACY?bid:`${tid}~${bid}`;
+const sessions=(org)=>{const o=org||curOrg();return [...(hasLegacy(o)?[LEGACY]:[]),...sortedTours().filter(t=>tourOrg(t)===o).map(t=>t.id)];};
+const sessName=tid=>{if(tid===LEGACY)return "Earlier counts";const t=tourById(tid);if(!t)return "Untitled tournament";const dup=tours().filter(x=>x.name===t.name&&x.org===t.org).length>1;return `${t.name||"Untitled tournament"}${dup&&t.date?` (${fmtDate(t.date)})`:""}`;};
+function defaultCur(org){
+  org=org||curOrg();
+  const T=sortedTours().filter(t=>tourOrg(t)===org);
+  if(!T.length)return hasLegacy(org)?LEGACY:"";
+  const today=todayStr();
+  const span=T.find(t=>{if(!t.date)return false;const e=new Date(t.date);e.setDate(e.getDate()+Math.max(0,num(t.days)-1));
+    const es=`${e.getFullYear()}-${String(e.getMonth()+1).padStart(2,"0")}-${String(e.getDate()).padStart(2,"0")}`;return t.date<=today&&today<=es;});
+  if(span)return span.id;
+  const past=T.filter(t=>t.date&&t.date<=today);
+  if(past.length)return past[past.length-1].id;
+  const up=T.filter(isUpcoming);return (up[0]||T[0]).id;
+}
+function curTour(){
+  L.curBy=L.curBy||{};const o=curOrg();const c=L.curBy[o]||{};
+  if(c.day!==todayStr()||!sessions().includes(c.id)){L.curBy[o]={id:defaultCur(o),day:""};}
+  return L.curBy[o].id;
+}
+function pickTour(id){L.curBy=L.curBy||{};L.curBy[curOrg()]={id,day:todayStr()};persist();}
+const needsSeed=()=>!tours().some(t=>ORGS.includes(t.org));
+function migrateOrgs(){
+  if(!isAdmin()||L.orgMigrated||(!LOCAL&&!loadedOnce))return;
+  allBoxes();saveCfg("boxes",0);
+  let changed=false;
+  tours().forEach(t=>{if(!ORGS.includes(t.org)){t.org="JVA";changed=true;}
+    const keep=(t.boxes||[]).filter(b=>boxes(t.org).some(x=>x.id===b));if(keep.length!==(t.boxes||[]).length){t.boxes=keep;changed=true;}});
+  if(changed)saveCfg("tournaments",0);
+  L.orgMigrated=true;persist();
+}
+function seedTournaments(){
+  const add=[];let n=0;
+  ORGS.forEach(org=>EVENTS[org].forEach(([name,locs])=>add.push({id:"t"+Date.now().toString(36)+(n++).toString(36),org,name,date:"",courts:"",locs:String(locs),days:"",boxes:[]})));
+  L.cfg.tournaments=[...tours(),...add];saveCfg("tournaments",0);
+}
+function curBoxes(){
+  const tid=curTour();const t=tourById(tid);
+  const assigned=t?(t.boxes||[]).filter(b=>boxes().some(x=>x.id===b)):[];
+  return assigned.length?boxes().filter(b=>assigned.includes(b.id)):boxes();
+}
+/* latest count for a box, newest tournament first; optionally only before a tournament */
+function boxState(bid,id,beforeTid,org){
+  const bx=allBoxes().find(b=>b.id===bid);
+  let S=sessions(org||(bx&&bx.org));
+  if(beforeTid){const i=S.indexOf(beforeTid);S=i<0?S:S.slice(0,i);}
+  for(let i=S.length-1;i>=0;i--){
+    const loc=sessLoc(S[i],bid);const p=get(loc,id,"post");if(p!==null)return {v:p,tid:S[i],phase:"post"};
+    const q=get(loc,id,"pre");if(q!==null)return {v:q,tid:S[i],phase:"pre"};
+  }
+  return null;
+}
+const shortfall=(bid,it)=>{const s=boxState(bid,it.id);return s?Math.max(0,target(it)-s.v):0;};
+const shortfallIn=(bid,it,org)=>{const s=boxState(bid,it.id,null,org);return s?Math.max(0,target(it)-s.v):0;};
+const uncounted=bid=>boxItemsAll().filter(it=>!boxState(bid,it.id)).length;
 function courtNeed(t,it){
   const r=rate(it);
   if(it.ice) return num(r.days)>0?Math.ceil(num(r.rate)*num(t.days)/num(r.days)-1e-9):0;
   if(!num(r.per))return 0;
   return Math.ceil(num(r.rate)*num(t.days)*num(t.locs)*num(t.courts)/num(r.per)-1e-9);
 }
-const latest=(box,id)=>{const p=get(box,id,"post");return p!==null?p:get(box,id,"pre");};
-const shortfall=(box,it)=>{const v=latest(box,it.id);return v===null?0:Math.max(0,target(it)-v);};
-const uncounted=box=>boxItemsAll().filter(it=>latest(box,it.id)===null).length;
-function needFor(t,it){
-  let n=0;
-  if(it.court) n+=courtNeed(t,it);
-  else if(!it.extra||it.inBoxes)(t.boxes||[]).forEach(b=>{if(boxes().some(x=>x.id===b)) n+=shortfall(b,it);});
-  return n;
+/* plan: each box counted once (first upcoming tournament it's assigned to) */
+function plan(list){
+  const seen=new Set();const perTour=[];
+  list.forEach(t=>{const bx=(t.boxes||[]).filter(b=>boxes(tourOrg(t)).some(x=>x.id===b));
+    const mine=bx.filter(b=>!seen.has(b));mine.forEach(b=>seen.add(b));perTour.push({t,boxes:mine,dup:bx.filter(b=>!mine.includes(b))});});
+  return {perTour,boxes:[...seen]};
 }
-const totalNeed=it=>tours().reduce((s,t)=>s+needFor(t,it),0);
-
+function needs(list){
+  const P=plan(list);const m={};
+  excessItemsAll().forEach(it=>{
+    let n=0;
+    if(it.court)list.forEach(t=>n+=courtNeed(t,it));
+    else if(!it.extra||it.inBoxes)P.boxes.forEach(b=>n+=shortfallIn(b,it,orgOf(list)));
+    m[it.id]=n;
+  });
+  return m;
+}
+const planList=()=>L.plan!=="all"&&upcoming().some(t=>t.id===L.plan)?[tourById(L.plan)]:upcoming();
+const orgOf=list=>list.length?tourOrg(list[0]):curOrg();
 /* ---------- sync ---------- */
+let loadedOnce=false;
 let syncState=LOCAL?"local":"idle", flushing=false, flushTimer=null, lastFlushDone=0;
 function setSync(s){syncState=s;const el=document.getElementById("sync");
   const map={local:"On this device",idle:L.lastSync?`Synced ${new Date(L.lastSync).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}`:"Connecting…",
@@ -289,10 +452,16 @@ async function api(body){
   const res=await fetch(API_URL,{method:"POST",redirect:"follow",body:JSON.stringify(Object.assign({},body,{code:L.code,admin:L.admin,by:L.name}))});
   return res.json();
 }
+function locLabel(loc){
+  if(loc==="excess")return "JVA Excess";
+  if(loc==="excess-3step")return "3Step Excess";
+  if(!loc.includes("~"))return `Earlier counts / ${boxName(loc)}`;
+  const [tid,bid]=loc.split("~");return `${sessName(tid)} / ${boxName(bid)}`;
+}
 function setCount(loc,item,phase,v){
   const k=K(loc,item,phase);
   if(has(v)) L.counts[k]=num(v); else delete L.counts[k];
-  L.pending[k]={loc,item,phase,value:has(v)?num(v):null,locName:loc==="excess"?"Excess":boxName(loc),itemName:(itm(item)||{name:item}).name};
+  L.pending[k]={loc,item,phase,value:has(v)?num(v):null,locName:locLabel(loc),itemName:(itm(item)||{name:item}).name};
   persist();scheduleFlush();
 }
 function scheduleFlush(ms=1200){if(LOCAL){L.pending={};persist();return;}clearTimeout(flushTimer);flushTimer=setTimeout(flush,ms);}
@@ -316,9 +485,10 @@ async function load(){
   try{
     const r=await api({action:"load"});
     if(!r.ok){if(r.error==="bad_code"){lockOut();return false;}throw r;}
-    if(lastFlushDone>started||flushing){setTimeout(load,800);return true;}
+    if(lastFlushDone>started||lastCfgDone>started||flushing){setTimeout(load,800);return true;}
     const cfg=DEFAULT_CFG();Object.keys(r.config||{}).forEach(k=>cfg[k]=r.config[k]);
-    L.cfg=cfg;
+    Object.keys(cfgDirty).forEach(k=>{if(k in L.cfg)cfg[k]=L.cfg[k];}); // keep unsaved setup edits
+    L.cfg=cfg;loadedOnce=true;
     const counts={};(r.counts||[]).forEach(([loc,item,phase,v])=>counts[K(loc,item,phase)]=v);
     Object.entries(L.pending).forEach(([k,p])=>{if(has(p.value))counts[k]=p.value;else delete counts[k];});
     L.counts=counts;
@@ -328,20 +498,25 @@ async function load(){
     return true;
   }catch(e){setSync("offline");return true;}
 }
-const cfgTimers={};
+const cfgTimers={}, cfgDirty={};
+let lastCfgDone=0;
 function saveCfg(key,ms=700){
   persist();if(LOCAL)return;
+  cfgDirty[key]=(cfgDirty[key]||0)+1;
   clearTimeout(cfgTimers[key]);
   cfgTimers[key]=setTimeout(async()=>{
+    const ver=cfgDirty[key];
     setSync("saving");
     try{const r=await api({action:"config",key,value:L.cfg[key]});
-      if(!r.ok){if(r.error==="bad_admin"){L.admin="";persist();render();toast("Setup is locked. Enter the admin code again.");}else throw r;}
-      L.lastSync=Date.now();setSync("idle");
-    }catch(e){setSync("offline");toast("Setup change didn’t save. Check your connection.");}
+      if(!r.ok){if(r.error==="bad_admin"){delete cfgDirty[key];L.admin="";persist();render();toast("Setup is locked. Enter the admin code again.");return;}else throw r;}
+      if(cfgDirty[key]===ver)delete cfgDirty[key];
+      lastCfgDone=Date.now();L.lastSync=Date.now();setSync("idle");
+    }catch(e){setSync("offline");toast("Setup change didn’t save. Retrying…");saveCfg(key,15000);cfgDirty[key]--;}
   },ms);
 }
 function lockOut(){L.code="";persist();showConnect("That team code didn’t work. Check it and try again.");}
 
+/* ---------- UI helpers ---------- */
 /* ---------- UI helpers ---------- */
 const $=s=>document.querySelector(s);
 const main=()=>document.getElementById("main");
@@ -353,55 +528,85 @@ function confirmDlg(title,msg,ok){
     const done=v=>{closeDlg(d);$("#c-ok").onclick=$("#c-cancel").onclick=null;res(v);};
     $("#c-ok").onclick=()=>done(true);$("#c-cancel").onclick=()=>done(false);openDlg(d);});
 }
+function tourOptions(selected,includeLegacy=true,org){
+  let T=sortedTours();if(org)T=T.filter(t=>tourOrg(t)===org);
+  const up=T.filter(isUpcoming),past=T.filter(isPast),nod=T.filter(t=>!t.date);
+  const opt=t=>`<option value="${esc(t.id)}" ${t.id===selected?"selected":""}>${esc(tourLabel(t))}</option>`;
+  return (past.length?`<optgroup label="Past and current">${past.map(opt).join("")}</optgroup>`:"")+
+    (up.length?`<optgroup label="Upcoming">${up.map(opt).join("")}</optgroup>`:"")+
+    (nod.length?`<optgroup label="Date not set">${nod.map(opt).join("")}</optgroup>`:"")+
+    (includeLegacy&&hasLegacy(org)?`<option value="${LEGACY}" ${selected===LEGACY?"selected":""}>Earlier counts (before tournaments)</option>`:"");
+}
 
 /* ---------- tabs ---------- */
 function validTab(){
-  const t=L.tab;
-  if(t.startsWith("box:")&&boxes().some(b=>"box:"+b.id===t))return t;
+  const t=L.tab;const vis=curBoxes();
+  if(t.startsWith("box:")&&vis.some(b=>"box:"+b.id===t))return t;
   if(["excess","restock","setup"].includes(t))return t;
-  return boxes()[0]?"box:"+boxes()[0].id:"excess";
+  return vis[0]?"box:"+vis[0].id:"excess";
 }
 function renderTabs(){
-  L.tab=validTab();
+  curTour();L.tab=validTab();
   const el=$("#tabs");
-  el.innerHTML=boxes().map(b=>`<button role="tab" data-tab="box:${b.id}" aria-selected="${L.tab==="box:"+b.id}">${esc(b.name)}</button>`).join("")+
+  el.innerHTML=curBoxes().map(b=>`<button role="tab" data-tab="box:${b.id}" aria-selected="${L.tab==="box:"+b.id}">${dot(b.id)}${esc(b.name)}</button>`).join("")+
     `<button role="tab" data-tab="excess" aria-selected="${L.tab==="excess"}">Excess</button><span class="sep"></span>`+
     `<button role="tab" data-tab="restock" aria-selected="${L.tab==="restock"}">Restock</button>`+
     `<button role="tab" data-tab="setup" aria-selected="${L.tab==="setup"}">Setup</button>`;
   el.querySelectorAll("button").forEach(b=>b.onclick=()=>{L.tab=b.dataset.tab;persist();render();window.scrollTo({top:0});});
 }
+function renderCtx(){
+  const el=$("#ctx");
+  if(!L.tab.startsWith("box:")||!curTour()){el.hidden=true;return;}
+  const id=L.tab.slice(4),ph=L.phase[id]||"post";
+  el.hidden=false;el.style.background=boxColor(id);
+  el.innerHTML=`<div class="ctx-in"><b>${esc(boxName(id))}</b><span>${curOrg()} ${esc(sessName(curTour()))}, ${ph==="pre"?"pre":"post"}-tournament</span></div>`;
+}
+function ensureBox3(){
+  if(L.box3Added||!isAdmin()||(!LOCAL&&!loadedOnce))return;
+  if(!allBoxes().some(b=>b.id==="b3"||(b.org==="JVA"&&b.name.trim().toLowerCase()==="box 3"))){allBoxes().push({id:"b3",name:"Box 3",org:"JVA"});saveCfg("boxes",0);}
+  L.box3Added=true;persist();
+}
+function renderOrgBar(){
+  const el=$("#orgbar");
+  el.innerHTML=ORGS.map(o=>`<button data-o="${o}" aria-pressed="${o===curOrg()}">${o}</button>`).join("");
+  el.querySelectorAll("button").forEach(b=>b.onclick=()=>{if(b.dataset.o===curOrg())return;L.org=b.dataset.o;L.plan="all";L.openEv="";persist();render();window.scrollTo({top:0});});
+}
 function render(){
-  renderTabs();
+  ensureBox3();migrateOrgs();renderOrgBar();
+  renderTabs();renderCtx();
   const t=L.tab;
   if(t.startsWith("box:"))renderBox(t.slice(4));
   else if(t==="excess")renderExcess();
   else if(t==="restock")renderRestock();
   else renderSetup();
 }
-/* refresh after a background load without disturbing typing */
 function softRefresh(){
   const a=document.activeElement;
   const typing=a&&main().contains(a)&&(a.tagName==="INPUT"||a.tagName==="SELECT");
-  if(L.tab.startsWith("box:")||L.tab==="excess"){renderTabs();updateRows();}
+  const before=L.tab;renderTabs();
+  if(L.tab!==before){render();return;}
+  renderOrgBar();
+  if((L.tab.startsWith("box:")&&curTour())||L.tab==="excess"){renderCtx();updateRows();}
   else if(!typing)render();
 }
 
 /* ---------- count rows ---------- */
 function rowHTML(it,withTarget){
-  return `<div class="item" data-id="${it.id}">
-    <div><span class="name">${esc(it.name)}${it.note?`<span class="note">${esc(it.note)}</span>`:""}</span><div class="status"></div></div>
+  const t=target(it);
+  return `<div class="item" data-id="${esc(it.id)}">
+    <div><span class="name">${esc(it.name)}${(()=>{const bits=[it.note,!withTarget&&unitPlural(it)?`count in ${unitPlural(it)}`:""].filter(Boolean);return bits.length?`<span class="note">${esc(bits.join(", "))}</span>`:"";})()}</span><div class="status"></div></div>
     <div class="ctrl">
-      ${withTarget?`<button class="target" aria-label="Mark ${esc(it.name)} fully stocked"></button>`:""}
+      ${withTarget?`<button class="target" aria-label="Mark ${esc(it.name)} full"></button>`:""}
       <div class="step">
         <button data-d="-1" aria-label="One less ${esc(it.name)}">−</button>
         <input type="number" inputmode="decimal" min="0" step="any" placeholder="–" aria-label="${esc(it.name)} count">
         <button data-d="1" aria-label="One more ${esc(it.name)}">+</button>
       </div>
     </div>
-    ${it.ice?`<div class="extra">Notes<input type="text" data-comment placeholder="e.g., extra for outdoor courts"></div>`:""}
+    ${it.ice&&!withTarget?`<div class="extra">Notes<input type="text" data-comment placeholder="e.g., extra for outdoor courts"></div>`:""}
   </div>`;
 }
-let rowCtx=null; // {loc, phase}
+let rowCtx=null;
 function wireRows(loc,phaseFn){
   rowCtx={loc,phaseFn};
   main().querySelectorAll(".item").forEach(row=>{
@@ -422,38 +627,41 @@ function wireRows(loc,phaseFn){
 function updateRows(skipRow){
   if(!rowCtx)return;
   const {loc,phaseFn}=rowCtx;const phase=phaseFn();
+  const N=isExcessLoc(loc)?needs(upcoming()):null;
+  const [tid,bid]=loc.includes("~")?loc.split("~"):[LEGACY,loc];
   let ok=0,fl=0,todo=0;const secFlags={};
   main().querySelectorAll(".item").forEach(row=>{
     const it=itm(row.dataset.id);if(!it)return;const inp=row.querySelector(".step input");
     const c=get(loc,it.id,phase);
     if(row!==skipRow&&document.activeElement!==inp)inp.value=c===null?"":c;
     let k="todo",msg="";
-    if(loc==="excess"){
-      const need=totalNeed(it);
-      if(c===null){msg=need?`Upcoming tournaments need ${need}`:"";}
-      else if(c<need){k="flag";msg=`Short ${fmt(need-c)} (need ${need})`;}
-      else{k="ok";msg=need?`Covers ${need} needed`:"Counted";}
+    if(isExcessLoc(loc)){
+      const need=N[it.id]||0;
+      if(c===null){msg=need?`Upcoming tournaments need ${qty(it,need)}`:"";}
+      else if(c<need){k="flag";msg=`Short ${qty(it,need-c)} (need ${fmt(need)})`;}
+      else{k="ok";msg=need?`Covers the ${fmt(need)} needed`:"Counted";}
     }else{
       const t=target(it);
-      const tbn=row.querySelector(".target");if(tbn)tbn.innerHTML=`${t}<small>level</small>`;
-      const pre=get(loc,it.id,"pre");
-      const bits=[];
-      if(c!==null){ if(!t){k="ok";bits.push("Counted");} else if(c<t){k="flag";bits.push(`Restock ${fmt(t-c)}`);} else {k="ok";bits.push("Stocked");} }
-      if(phase==="post"&&pre!==null){bits.push(`started with ${pre}`);if(c!==null)bits.push(`used ${fmt(Math.max(0,pre-c))}`);}
-      msg=bits.join(", ");
-      if(msg)msg=msg[0].toUpperCase()+msg.slice(1);
+      const tbn=row.querySelector(".target");
+      if(tbn){const w=unitWord(it,t);tbn.innerHTML=`${fmt(t)}${w?`<small>${esc(w)}</small>`:""}`;tbn.classList.toggle("bare",!w);}
+      const pre=get(loc,it.id,"pre");const bits=[];
+      if(c!==null){ if(!t){k="ok";bits.push("Counted");} else if(c<t){k="flag";bits.push(`Restock ${qty(it,t-c)}`);} else {k="ok";bits.push("Full");} }
+      if(phase==="post"&&pre!==null){bits.push(`started with ${fmt(pre)}`);if(c!==null)bits.push(`used ${fmt(Math.max(0,pre-c))}`);}
+      if(phase==="pre"&&c===null&&tid!==LEGACY){const prev=boxState(bid,it.id,tid);if(prev)bits.push(`last count ${fmt(prev.v)} after ${sessName(prev.tid)}`);}
+      msg=bits.join(", ");if(msg)msg=msg[0].toUpperCase()+msg.slice(1);
     }
     row.classList.remove("ok","flag");if(k!=="todo")row.classList.add(k);
     row.querySelector(".status").textContent=msg;
     row.classList.toggle("hide",L.filter!=="all"&&k!==L.filter);
-    if(k==="ok")ok++;else if(k==="flag"){fl++;secFlags[row.closest("section").dataset.s]=(secFlags[row.closest("section").dataset.s]||0)+1;}else todo++;
+    const sk=row.closest("section").dataset.s;
+    if(k==="ok")ok++;else if(k==="flag"){fl++;secFlags[sk]=(secFlags[sk]||0)+1;}else todo++;
   });
   main().querySelectorAll("section.grp").forEach(s=>{
-    const f=secFlags[s.dataset.s]||0;s.querySelector(".grp-h small").textContent=f?`${f} ${loc==="excess"?"short":"to restock"}`:"";
+    const f=secFlags[s.dataset.s]||0;s.querySelector(".grp-h small").textContent=f?`${f} ${isExcessLoc(loc)?"short":"to restock"}`:"";
     s.style.display=(s.classList.contains("extra-grp")&&L.filter==="all")||s.querySelectorAll(".item:not(.hide)").length?"":"none";
   });
   const total=Math.max(1,ok+fl+todo);
-  const tl=$("#tally");if(tl)tl.textContent=`${total-todo} of ${total} counted, ${fl} ${loc==="excess"?"short":"to restock"}`;
+  const tl=$("#tally");if(tl)tl.textContent=`${ok+fl} of ${ok+fl+todo} counted, ${fl} ${isExcessLoc(loc)?"short":"to restock"}`;
   const m=$("#meter");if(m){m.children[0].style.width=(ok/total*100)+"%";m.children[1].style.width=(fl/total*100)+"%";}
 }
 function sectionsHTML(sections,withTarget){
@@ -473,36 +681,48 @@ function wireChips(){main().querySelectorAll(".chips button").forEach(b=>b.oncli
 
 /* ---------- box tab ---------- */
 function renderBox(id){
+  const tid=curTour();
+  if(!tid&&isAdmin()&&needsSeed()){seedTournaments();render();return;}
+  if(!tid){
+    rowCtx=null;
+    main().innerHTML=`<div class="card"><h2>Add your ${curOrg()} tournaments</h2><p class="sub">${isAdmin()?"Counts are logged by tournament. Add your tournaments in Setup to start logging.":"Counts are logged by tournament. Ask your admin to add tournaments in Setup."}</p>
+      ${isAdmin()?`<button class="btn primary" style="margin-top:12px" id="go-setup">Go to Setup</button>`:""}</div>`;
+    if($("#go-setup"))$("#go-setup").onclick=()=>{L.tab="setup";persist();render();};
+    return;
+  }
+  const t=tourById(tid);
   const ph=L.phase[id]||"post";
-  const t=tourForBox(id);
-  main().innerHTML=`<div class="card">
-      <div class="row-between"><h2>${esc(boxName(id))}</h2><button class="link danger" id="newcount">Start new count</button></div>
-      <p class="sub">${t?`Going to ${esc(t.name||"next tournament")}${t.date?`, ${fmtDate(t.date)}`:""}`:"Not assigned to a tournament"}</p>
+  const loc=sessLoc(tid,id);
+  main().innerHTML=`<div class="card boxcard" style="--bc:${boxColor(id)}">
+      <label class="field tsel">${curOrg()} tournament<select id="tsel">${tourOptions(tid,true,curOrg())}</select></label>
+      ${t?`<p class="sub" style="margin-top:6px">${[t.date?fmtDate(t.date):"Date not set",`${num(t.courts)} courts`,`${num(t.locs)} AT locations`,`${num(t.days)} days`].join(", ")}</p>`:""}
+      <div class="boxtitle" style="margin-top:14px">${dot(id)}<h2>${esc(boxName(id))}</h2></div>
       <div class="seg" role="group" aria-label="Count type">
         <button data-p="pre" aria-pressed="${ph==="pre"}">Pre-tournament</button>
         <button data-p="post" aria-pressed="${ph==="post"}">Post-tournament</button>
       </div>
-      <p class="hint">${ph==="pre"?"Starting inventory before the tournament. Tap the pink level if an item is fully stocked.":"What’s left after the tournament. Usage is figured from the pre-tournament count."}</p>
+      <p class="hint">${ph==="pre"?"Starting inventory before the tournament. Tap the pink amount if an item is full.":"What’s left after the tournament. Usage is figured from the pre-tournament count."}</p>
       <div class="meter" id="meter"><i class="m-ok"></i><i class="m-flag"></i></div>
       <p class="hint" id="tally"></p>
       ${chipsHTML("Restock")}
+      <div class="row-between" style="margin-top:6px"><span></span><button class="link danger" id="newcount">Clear this box’s counts</button></div>
     </div>${sectionsHTML(BOX_TAB_SECTIONS,true)}`;
-  main().querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{L.phase[id]=b.dataset.p;persist();renderBox(id);});
+  $("#tsel").onchange=e=>{pickTour(e.target.value);render();};
+  main().querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{L.phase[id]=b.dataset.p;persist();renderCtx();renderBox(id);});
   $("#newcount").onclick=async()=>{
-    if(!await confirmDlg(`Start a new count for ${boxName(id)}?`,"This clears this box’s pre- and post-tournament counts for everyone. Other boxes, excess inventory, and setup stay. Export a report first if you need one.","Clear counts"))return;
-    if(!LOCAL){try{const r=await api({action:"clear",loc:id});if(!r.ok)throw r;}catch(e){toast("Couldn’t clear while offline. Try again with a connection.");return;}}
-    Object.keys(L.counts).forEach(k=>{if(k.startsWith(id+"|"))delete L.counts[k];});
-    Object.keys(L.pending).forEach(k=>{if(k.startsWith(id+"|"))delete L.pending[k];});
-    L.phase[id]="pre";persist();renderBox(id);toast("Counts cleared");
+    if(!await confirmDlg(`Clear ${boxName(id)} for ${sessName(tid)}?`,"This erases this box’s pre- and post-tournament counts for this tournament only, for everyone. Other tournaments and boxes aren’t affected.","Clear counts"))return;
+    if(!LOCAL){try{const r=await api({action:"clear",loc});if(!r.ok)throw r;}catch(e){toast("Couldn’t clear while offline. Try again with a connection.");return;}}
+    Object.keys(L.counts).forEach(k=>{if(k.startsWith(loc+"|"))delete L.counts[k];});
+    Object.keys(L.pending).forEach(k=>{if(k.startsWith(loc+"|"))delete L.pending[k];});
+    persist();render();toast("Counts cleared");
   };
-  wireChips();wireRows(id,()=>L.phase[id]||"post");wireAddExtra(true);updateRows();
+  wireChips();wireRows(loc,()=>L.phase[id]||"post");wireAddExtra(true);updateRows();
 }
-
 /* ---------- extra supplies ---------- */
 function wireAddExtra(fromBox){
   main().querySelectorAll("[data-add-extra]").forEach(b=>b.onclick=()=>{
-    const d=$("#xdlg");$("#x-name").value="";$("#x-note").value="";$("#x-level").value="1";
-    $("#x-in").checked=fromBox;$("#x-lvl-wrap").hidden=!fromBox;$("#x-err").textContent="";openDlg(d);setTimeout(()=>$("#x-name").focus(),50);
+    $("#x-name").value="";$("#x-note").value="";$("#x-level").value="1";
+    $("#x-in").checked=fromBox;$("#x-lvl-wrap").hidden=!fromBox;$("#x-err").textContent="";openDlg($("#xdlg"));setTimeout(()=>$("#x-name").focus(),50);
   });
 }
 $("#x-in").onchange=()=>{$("#x-lvl-wrap").hidden=!$("#x-in").checked;};
@@ -511,7 +731,7 @@ $("#x-save").onclick=async()=>{
   const name=$("#x-name").value.trim();
   if(!name){$("#x-err").textContent="Enter the item name.";return;}
   if(excessItemsAll().some(i=>i.name.toLowerCase()===name.toLowerCase())){$("#x-err").textContent="That item is already on the list.";return;}
-  const x={id:"x-"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name,note:$("#x-note").value.trim(),inBoxes:$("#x-in").checked,level:$("#x-in").checked?num($("#x-level").value):0,by:L.name};
+  const x={id:"x-"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name,note:$("#x-note").value.trim(),inBoxes:$("#x-in").checked,level:$("#x-in").checked?num($("#x-level").value):0};
   if(!LOCAL){
     $("#x-err").textContent="Saving…";
     try{const r=await api({action:"addExtra",extra:x});if(!r.ok)throw r;L.cfg.extras=r.extras;}
@@ -522,23 +742,24 @@ $("#x-save").onclick=async()=>{
 function extrasSetupHTML(){
   const X=L.cfg.extras||[];
   return `<div class="card"><h3>Extra supplies</h3><p class="sub">Items added beyond the standard list. Anyone counting can add them from a box or the Excess tab.</p>
-    ${X.length?X.map((x,i)=>`<div class="rate" data-x="${i}">
-      <div class="grid2"><label class="field">Item<input data-xk="name" value="${esc(x.name)}"></label><label class="field">Pack size<input data-xk="note" value="${esc(x.note)}" placeholder="Optional"></label></div>
+    ${X.length?X.map(x=>`<div class="rate" data-x="${esc(x.id)}">
+      <div class="grid2"><label class="field">Item<input data-xk="name" value="${esc(x.name)}"></label><label class="field">Unit<input data-xk="note" value="${esc(x.note)}" placeholder="e.g., box"></label></div>
       <div class="row-between" style="margin-top:8px">
-        <label class="rl" style="margin:0"><input type="checkbox" data-xk="inBoxes" ${x.inBoxes?"checked":""} style="width:18px;height:18px;accent-color:var(--court)"> Kept in every box, level <input data-xk="level" type="number" inputmode="decimal" min="0" step="any" value="${esc(x.level)}"></label>
+        <label class="rl" style="margin:0"><input type="checkbox" data-xk="inBoxes" ${x.inBoxes?"checked":""} style="width:18px;height:18px;accent-color:var(--court)"> In every box, full box has <input data-xk="level" type="number" inputmode="decimal" min="0" step="any" value="${esc(x.level)}"></label>
         <button class="link danger" data-xdel>Remove</button></div></div>`).join(""):`<p class="empty">None yet.</p>`}
     <button class="btn ghost" style="width:100%;margin-top:10px" data-add-extra>Add extra supply</button></div>`;
 }
 function wireExtrasSetup(){
   main().querySelectorAll("[data-x]").forEach(row=>{
-    const x=L.cfg.extras[+row.dataset.x];
+    const xid=row.dataset.x, X=()=>(L.cfg.extras||[]).find(e=>e.id===xid);
     row.querySelectorAll("[data-xk]").forEach(inp=>{
       const k=inp.dataset.xk;
-      inp[inp.type==="checkbox"?"onchange":"oninput"]=()=>{x[k]=inp.type==="checkbox"?inp.checked:k==="level"?num(inp.value):inp.value;saveCfg("extras");renderTabs();};
+      inp[inp.type==="checkbox"?"onchange":"oninput"]=()=>{const x=X();if(!x)return;x[k]=inp.type==="checkbox"?inp.checked:k==="level"?num(inp.value):inp.value;saveCfg("extras");renderTabs();};
     });
     row.querySelector("[data-xdel]").onclick=async()=>{
+      const x=X();if(!x)return;
       if(!await confirmDlg(`Remove ${x.name}?`,"It disappears from every box and the Excess tab. Its counts stay in the Google Sheet.","Remove"))return;
-      L.cfg.extras=L.cfg.extras.filter(e=>e!==x);saveCfg("extras",0);render();
+      L.cfg.extras=L.cfg.extras.filter(e=>e.id!==xid);saveCfg("extras",0);render();
     };
   });
   wireAddExtra(false);
@@ -546,67 +767,77 @@ function wireExtrasSetup(){
 
 /* ---------- excess tab ---------- */
 function renderExcess(){
-  main().innerHTML=`<div class="card"><h2>Excess inventory</h2>
-    <p class="sub">Everything not packed in a box, including court-based supplies.</p>
+  main().innerHTML=`<div class="card"><h2>${curOrg()} excess inventory</h2>
+    <p class="sub">Everything for ${curOrg()} not packed in a box, including court-based supplies.</p>
     <p class="hint">Each item shows what upcoming tournaments need from excess, so shortages stand out as you count.</p>
     <div class="meter" id="meter"><i class="m-ok"></i><i class="m-flag"></i></div><p class="hint" id="tally"></p>
     ${chipsHTML("Short")}</div>${sectionsHTML(EXCESS_SECTIONS,false)}`;
-  wireChips();wireRows("excess",()=>"now");wireAddExtra(false);updateRows();
+  wireChips();wireRows(excessLoc(),()=>"now");wireAddExtra(false);updateRows();
 }
 
 /* ---------- restock tab ---------- */
-function orderRows(){
-  return excessItemsAll().map(it=>{const need=totalNeed(it);const ex=get("excess",it.id,"now");
+function orderRows(list){
+  const N=needs(list);
+  const xl=excessLoc(orgOf(list));
+  return excessItemsAll().map(it=>{const need=N[it.id]||0;const ex=get(xl,it.id,"now");
     return {it,need,ex,order:Math.max(0,need-(ex||0))};}).filter(r=>r.need>0);
 }
+function shortList(bid){
+  const need=boxItemsAll().map(it=>[it,shortfall(bid,it)]).filter(([,n])=>n>0);
+  return need.length?`<ul class="mini">${need.map(([it,n])=>`<li><span>${esc(it.name)}</span><b>${esc(qty(it,n))}</b></li>`).join("")}</ul>`:`<p class="empty">Nothing to restock.</p>`;
+}
+function lastCountNote(bid){
+  let last=null;sessions().forEach(s=>{if(boxItemsAll().some(it=>get(sessLoc(s,bid),it.id,"pre")!==null||get(sessLoc(s,bid),it.id,"post")!==null))last=s;});
+  return last?`Based on the latest count, from ${esc(sessName(last))}`:"Not counted yet";
+}
 function renderRestock(){
-  const T=tours();
-  const unassigned=boxes().filter(b=>!tourForBox(b.id));
-  let h=`<div class="card"><h2>Restock</h2><p class="sub">What each upcoming tournament needs, and what excess inventory can’t cover.</p></div>`;
-  if(!T.length)h+=`<div class="card"><p class="empty">No upcoming tournaments yet. Add one in Setup and assign boxes to it.</p></div>`;
-  T.forEach(t=>{
-    const bxs=(t.boxes||[]).filter(b=>boxes().some(x=>x.id===b));
+  const UP=upcoming();
+  const list=planList();
+  const P=plan(list);
+  let h=`<div class="card"><h2>Restock</h2><p class="sub">What upcoming ${curOrg()} tournaments need, and what ${curOrg()} excess inventory can’t cover.</p>
+    ${UP.length?`<label class="field" style="margin-top:12px">Plan for<select id="plan"><option value="all">All upcoming ${curOrg()} tournaments</option>${UP.map(t=>`<option value="${esc(t.id)}" ${L.plan===t.id?"selected":""}>${esc(orgLabel(t))}</option>`).join("")}</select></label>`:""}</div>`;
+  if(!UP.length)h+=`<div class="card"><p class="empty">No upcoming ${curOrg()} tournaments. Set dates for your tournaments in Setup and assign boxes.</p></div>`;
+  P.perTour.forEach(({t,boxes:bx,dup})=>{
     h+=`<div class="card accent"><h3>${esc(t.name||"Untitled tournament")}</h3>
-      <p class="sub">${[fmtDate(t.date),`${num(t.courts)} courts`,`${num(t.locs)} AT locations`,`${num(t.days)} days`].filter(Boolean).join(", ")}</p>`;
-    if(!bxs.length)h+=`<p class="warn">No boxes assigned.</p>`;
-    bxs.forEach(b=>{
-      const need=boxItemsAll().map(it=>[it,shortfall(b,it)]).filter(([,n])=>n>0);
-      const u=uncounted(b);
-      h+=`<p style="margin:12px 0 0;font-weight:600">${esc(boxName(b))}</p>`+
-        (need.length?`<ul class="mini">${need.map(([it,n])=>`<li><span>${esc(it.name)}</span><b>${fmt(n)}</b></li>`).join("")}</ul>`:`<p class="empty">Nothing to restock.</p>`)+
-        (u?`<p class="warn">${u} item${u>1?"s":""} not counted yet</p>`:"");
-    });
-    const cn=COURT_ITEMS.map(it=>[it,courtNeed(t,it)]);
-    h+=`<p style="margin:12px 0 0;font-weight:600">Court-based supplies</p>`+
-      (cn.some(([,n])=>n)?`<ul class="mini">${cn.map(([it,n])=>`<li><span>${esc(it.name)} <small class="note" style="display:inline">${esc(it.note)}</small></span><b>${n}</b></li>`).join("")}</ul>`
+      <p class="sub">${[t.org,fmtDate(t.date),`${num(t.courts)} courts`,`${num(t.locs)} AT locations`,`${num(t.days)} days`].filter(Boolean).join(", ")}</p>`;
+    if(!bx.length&&!dup.length)h+=`<p class="warn">No boxes assigned.</p>`;
+    bx.forEach(b=>{const u=uncounted(b);
+      h+=`<p class="bhead">${dot(b)}${esc(boxName(b))}</p><p class="hint" style="margin:2px 0 0">${lastCountNote(b)}</p>`+shortList(b)+(u?`<p class="warn">${u} item${u>1?"s":""} never counted</p>`:"");});
+    dup.forEach(b=>{h+=`<p class="bhead">${dot(b)}${esc(boxName(b))}</p><p class="hint" style="margin:2px 0 0">Restocked for an earlier tournament in this plan.</p>`;});
+    const cn=COURT_ITEMS.map(it=>[it,courtNeed(t,it)]).filter(([,n])=>n>0);
+    h+=`<p class="bhead">Court-based supplies</p>`+
+      (cn.length?`<ul class="mini">${cn.map(([it,n])=>`<li><span>${esc(it.name)}</span><b>${esc(qty(it,n))}</b></li>`).join("")}</ul>`
         :`<p class="empty">Add courts, AT locations, and days in Setup.</p>`);
     if(L.cfg.comments["ice-bags"])h+=`<p class="hint">Ice bags: ${esc(L.cfg.comments["ice-bags"])}</p>`;
     h+=`</div>`;
   });
-  const O=orderRows();
-  const exTodo=excessItemsAll().filter(it=>get("excess",it.id,"now")===null&&totalNeed(it)>0).length;
-  h+=`<div class="card"><h3>Order list</h3><p class="sub">Total needed for all upcoming tournaments, minus excess on hand.</p>`+
-    (O.length?`<div class="tw"><table class="t"><thead><tr><th>Item</th><th class="n">Need</th><th class="n">Excess</th><th class="n">Order</th></tr></thead><tbody>${
-      O.map(r=>`<tr><td>${esc(r.it.name)}${r.it.note?`<span class="note">${esc(r.it.note)}</span>`:""}</td><td class="n">${fmt(r.need)}</td><td class="n">${r.ex===null?"–":r.ex}</td><td class="n ${r.order?"hot":""}">${fmt(r.order)}</td></tr>`).join("")}</tbody></table></div>`
-      :`<p class="empty">Nothing needed yet.</p>`)+
-    (exTodo?`<p class="warn">${exTodo} needed item${exTodo>1?"s":""} not counted in excess yet</p>`:"")+
-    `<div class="row-between" style="margin-top:12px"><button class="btn ghost sm" id="copy">Copy order list</button></div></div>`;
-  if(unassigned.length){
-    h+=`<div class="card"><h3>Boxes not assigned</h3><p class="sub">Not included in the order list.</p>`;
-    unassigned.forEach(b=>{const need=boxItemsAll().map(it=>[it,shortfall(b,it)]).filter(([,n])=>n>0);
-      h+=`<p style="margin:12px 0 0;font-weight:600">${esc(b.name)}</p>`+(need.length?`<ul class="mini">${need.map(([it,n])=>`<li><span>${esc(it.name)}</span><b>${fmt(n)}</b></li>`).join("")}</ul>`:`<p class="empty">Nothing to restock.</p>`);});
+  const O=orderRows(list);
+  const exTodo=O.filter(r=>r.ex===null).length;
+  if(UP.length){
+    h+=`<div class="card"><h3>Order list</h3><p class="sub">Total needed${list.length===1?` for ${esc(list[0].name||"this tournament")}`:` for all upcoming ${curOrg()} tournaments`}, minus ${curOrg()} excess on hand.</p>`+
+      (O.length?`<div class="tw"><table class="t"><thead><tr><th>Item</th><th class="n">Need</th><th class="n">Excess</th><th class="n">Order</th></tr></thead><tbody>${
+        O.map(r=>`<tr><td>${esc(r.it.name)}${unitPlural(r.it)?`<span class="note">${esc(unitPlural(r.it))}</span>`:""}</td><td class="n">${fmt(r.need)}</td><td class="n">${r.ex===null?"–":r.ex}</td><td class="n ${r.order?"hot":""}">${fmt(r.order)}</td></tr>`).join("")}</tbody></table></div>`
+        :`<p class="empty">Nothing needed yet.</p>`)+
+      (exTodo?`<p class="warn">${exTodo} needed item${exTodo>1?"s":""} not counted in excess yet</p>`:"")+
+      `<div class="row-between" style="margin-top:12px"><button class="btn ghost sm" id="copy">Copy order list</button></div></div>`;
+  }
+  const others=boxes().filter(b=>!plan(upcoming()).boxes.includes(b.id));
+  if(others.length){
+    h+=`<div class="card"><h3>${curOrg()} boxes not assigned to an upcoming tournament</h3><p class="sub">Not included in the order list.</p>`;
+    others.forEach(b=>{h+=`<p class="bhead">${dot(b.id)}${esc(b.name)}</p><p class="hint" style="margin:2px 0 0">${lastCountNote(b.id)}</p>`+shortList(b.id);});
     h+=`</div>`;
   }
   main().innerHTML=h;
-  $("#copy").onclick=()=>copyText(orderText());
+  if($("#plan"))$("#plan").onchange=e=>{L.plan=e.target.value;persist();renderRestock();};
+  if($("#copy"))$("#copy").onclick=()=>copyText(orderText());
 }
 function orderText(){
-  const lines=["Order list"];
-  tours().forEach(t=>lines.push(`For ${t.name||"tournament"}${t.date?` (${fmtDate(t.date)})`:""}: ${(t.boxes||[]).map(boxName).join(", ")||"no boxes"}`));
+  const list=planList();const lines=[`${curOrg()} order list`];
+  plan(list).perTour.forEach(({t,boxes:bx})=>lines.push(`${orgLabel(t)}: ${bx.map(boxName).join(", ")||"no boxes"}`));
   lines.push("");
-  const O=orderRows().filter(r=>r.order>0);
+  const O=orderRows(list).filter(r=>r.order>0);
   if(!O.length)lines.push("Nothing to order.");
-  O.forEach(r=>lines.push(`${r.it.name}${r.it.note?` (${r.it.note})`:""}: ${fmt(r.order)}`));
+  O.forEach(r=>lines.push(`${r.it.name}: ${qty(r.it,r.order)}`));
   return lines.join("\n");
 }
 async function copyText(t){
@@ -614,54 +845,80 @@ async function copyText(t){
   catch(e){const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();
     try{document.execCommand("copy");toast("Copied");}catch(x){toast("Couldn’t copy");}ta.remove();}
 }
-
 /* ---------- setup tab ---------- */
+const inputStyle='style="flex:1;border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:var(--bg);font-size:16px;min-width:0"';
+function tourCard(t){
+  const custom=!ORGS.includes(t.org)||!EVENTS[t.org].some(e=>e[0]===t.name);
+  return `<div class="inst" data-t="${esc(t.id)}">
+    ${custom?`<label class="field" style="margin-bottom:10px">Tournament name<input data-k="name" value="${esc(t.name)}" placeholder="Tournament name"></label>`:""}
+    <div class="grid2">
+      <label class="field wide">Start date<input data-k="date" type="date" value="${esc(t.date)}"></label>
+    </div>
+    <div class="grid3" style="margin-top:10px">
+      <label class="field">Courts<input data-k="courts" type="number" inputmode="numeric" min="0" value="${esc(t.courts)}" placeholder="0"></label>
+      <label class="field">AT locations<input data-k="locs" type="number" inputmode="numeric" min="0" value="${esc(t.locs)}" placeholder="0"></label>
+      <label class="field">Days<input data-k="days" type="number" inputmode="numeric" min="0" value="${esc(t.days)}" placeholder="0"></label>
+    </div>
+    ${t.name==="World Challenge"?`<p class="hint">Possibly 4 AT locations.</p>`:""}
+    <p class="hint" style="margin-top:12px">Boxes going to this tournament</p>
+    <div class="boxpick">${boxes().map(b=>{const mine=(t.boxes||[]).includes(b.id);
+      return `<label${mine?` class="on" style="--bc:${boxColor(b.id)}"`:""}><input type="checkbox" data-box="${b.id}" ${mine?"checked":""}>${dot(b.id)}${esc(b.name)}</label>`;}).join("")||`<span class="empty">Add a box first.</span>`}</div>
+    <div class="row-between" style="margin-top:10px"><span></span><button class="link danger" data-del-t>Remove this date</button></div>
+  </div>`;
+}
+function eventGroups(org){
+  const T=sortedTours().filter(t=>tourOrg(t)===org);
+  const names=[...(EVENTS[org]||[]).map(e=>e[0])];
+  T.forEach(t=>{if(!names.includes(t.name))names.push(t.name);});
+  return names.map(name=>({name,list:T.filter(t=>t.name===name)}));
+}
+function eventSummary(list){
+  if(!list.length)return "No dates";
+  const up=list.filter(isUpcoming);const nod=list.filter(t=>!t.date).length;
+  if(up.length)return `Next: ${fmtDate(up[0].date)}${list.length>1?`, ${list.length} dates`:""}`;
+  if(nod===list.length)return "Date not set";
+  return `${list.length} date${list.length>1?"s":""}, none upcoming`;
+}
+async function clearLocs(locs){
+  if(LOCAL)return true;
+  try{for(const loc of locs){const r=await api({action:"clear",loc});if(!r.ok)throw r;}return true;}catch(e){return false;}
+}
 function renderSetup(){
   const A=isAdmin();
   let h=`<div class="card"><h2>Setup</h2>
-    <div class="grid2" style="margin-top:10px">
-      <label class="field wide">Your name<input id="s-name" value="${esc(L.name)}" placeholder="Shown with your counts"></label>
-    </div>
-    ${LOCAL?`<p class="hint">Running on this device only. Connect a Google Sheet to share counts with trainers.</p>`:
+    <div class="grid2" style="margin-top:10px"><label class="field wide">Your name<input id="s-name" value="${esc(L.name)}" placeholder="Shown with your counts"></label></div>
+    ${LOCAL?`<p class="hint">Running on this device only. Connect a Google Sheet to share counts with Athletic Trainers.</p>`:
       `<div class="row-between" style="margin-top:10px"><span class="sub" id="s-sync"></span><button class="btn ghost sm" id="s-refresh">Refresh now</button></div>`}
   </div>`;
   if(!A){
-    h+=`<div class="card"><h3>Admin setup</h3><p class="sub">Boxes, tournaments, and restock levels are locked. Enter the admin code to change them.</p>
-      <div class="row-between" style="margin-top:10px;flex-wrap:nowrap"><input id="s-admin" type="password" class="field" style="flex:1;border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:var(--bg);font-size:16px;min-width:0" placeholder="Admin code" autocomplete="off"><button class="btn primary sm" id="s-unlock">Unlock</button></div>
+    h+=`<div class="card"><h3>Admin setup</h3><p class="sub">Tournaments, boxes, and box contents are locked. Enter the admin code to change them.</p>
+      <div class="row-between" style="margin-top:10px;flex-wrap:nowrap"><input id="s-admin" type="password" ${inputStyle} placeholder="Admin code" autocomplete="off"><button class="btn primary sm" id="s-unlock">Unlock</button></div>
       <p class="err" id="s-err"></p></div>`;
-    h+=tourSummary();
+    h+=`<div class="card"><h3>Upcoming ${curOrg()} tournaments</h3>${upcoming().length?`<ul class="mini">${upcoming().map(t=>`<li><span>${esc(orgLabel(t))}</span><span>${(t.boxes||[]).map(b=>dot(b)+esc(boxName(b))).join(", ")||"No boxes"}</span></li>`).join("")}</ul>`:`<p class="empty">None with dates yet.</p>`}</div>`;
   }else{
-    h+=`<div class="card"><div class="row-between"><h3 style="margin:0">Next tournaments</h3><button class="btn primary sm" id="add-t">Add tournament</button></div>
-      <p class="hint">Each box can go to one tournament at a time.</p></div>`;
-    tours().forEach((t,i)=>{
-      h+=`<div class="card accent" data-t="${i}">
-        <div class="grid2">
-          <label class="field wide">Tournament<input data-k="name" value="${esc(t.name)}" placeholder="e.g., Spring Kickoff"></label>
-          <label class="field wide">Date<input data-k="date" type="date" value="${esc(t.date)}"></label>
-        </div>
-        <div class="grid3" style="margin-top:10px">
-          <label class="field">Courts<input data-k="courts" type="number" inputmode="numeric" min="0" value="${esc(t.courts)}" placeholder="0"></label>
-          <label class="field">AT locations<input data-k="locs" type="number" inputmode="numeric" min="0" value="${esc(t.locs)}" placeholder="0"></label>
-          <label class="field">Days<input data-k="days" type="number" inputmode="numeric" min="0" value="${esc(t.days)}" placeholder="0"></label>
-        </div>
-        <p class="hint" style="margin-top:12px">Boxes going to this tournament</p>
-        <div class="boxpick">${boxes().map(b=>{const o=tourForBox(b.id);const mine=(t.boxes||[]).includes(b.id);
-          return `<label><input type="checkbox" data-box="${b.id}" ${mine?"checked":""}>${esc(b.name)}${o&&!mine?` <small>(${esc(o.name||"other")})</small>`:""}</label>`;}).join("")||`<span class="empty">Add a box first.</span>`}</div>
-        <div class="row-between" style="margin-top:10px"><span></span><button class="link danger" data-del-t>Remove tournament</button></div>
-      </div>`;
-    });
-    h+=`<div class="card"><div class="row-between"><h3 style="margin:0">Boxes</h3><button class="btn primary sm" id="add-b">Add box</button></div>
-      <p class="hint">Every box starts with the same restock levels.</p>
-      ${boxes().map(b=>`<div class="row-between" style="margin-top:10px;flex-wrap:nowrap" data-b="${b.id}">
-        <input class="bname" value="${esc(b.name)}" style="flex:1;border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:var(--bg);font-size:16px;min-width:0">
+    if(needsSeed())seedTournaments();
+    const org=curOrg();
+    h+=`<div class="card"><h3>${org} tournaments</h3>
+      <p class="sub">Every date shows up in the logging dropdowns. Counts are kept separately for each date, so you can look back anytime.</p>
+      <div class="events">${eventGroups(org).map(g=>`<details class="ev" data-ev="${esc(g.name)}" ${L.openEv===org+"|"+g.name?"open":""}>
+        <summary><span class="ev-n">${esc(g.name)}</span><span class="ev-s">${esc(eventSummary(g.list))}</span></summary>
+        ${g.list.map(tourCard).join("")}
+        <button class="btn ghost sm" style="width:100%" data-add-date="${esc(g.name)}">${g.list.length?"Add another date":"Add a date"}</button>
+      </details>`).join("")}</div>
+      <button class="link" id="add-custom" style="margin-top:8px">Add a different ${org} tournament</button>
+    </div>`;
+    h+=`<div class="card"><div class="row-between"><h3 style="margin:0">${curOrg()} boxes</h3><button class="btn primary sm" id="add-b">Add box</button></div>
+      <p class="hint">${curOrg()} boxes are counted only with ${curOrg()} tournaments. Every box starts with the same contents.</p>
+      ${boxes().map(b=>`<div class="row-between" style="margin-top:10px;flex-wrap:nowrap;gap:8px" data-b="${b.id}">${dot(b.id)}
+        <input class="bname" value="${esc(b.name)}" ${inputStyle}>
         <button class="link danger" data-del-b>Remove</button></div>`).join("")}</div>`;
     h+=`<div class="card"><h3>Court-based supplies</h3><p class="sub">Pulled from excess inventory for each tournament.</p>
       ${COURT_ITEMS.map(it=>{const r=rate(it);return `<div class="rate" data-r="${it.id}"><span class="name">${esc(it.name)}</span><div class="rl">${it.ice
-        ?`<input data-rk="rate" type="number" inputmode="decimal" step="any" min="0" value="${esc(r.rate)}"> roll per <input data-rk="days" type="number" inputmode="decimal" step="any" min="0" value="${esc(r.days)}"> tournament days`
-        :`<input data-rk="rate" type="number" inputmode="decimal" step="any" min="0" value="${esc(r.rate)}"> ${esc(it.note)} per day per AT location per <input data-rk="per" type="number" inputmode="numeric" min="1" value="${esc(r.per)}"> courts`}</div></div>`;}).join("")}</div>`;
-    h+=`<div class="card"><h3>Box restock levels</h3><p class="sub">How many of each item a full box should have.</p>
+        ?`<input data-rk="rate" type="number" inputmode="decimal" step="any" min="0" value="${esc(r.rate)}"> ${esc(unitPlural(it))} per <input data-rk="days" type="number" inputmode="decimal" step="any" min="0" value="${esc(r.days)}"> tournament days`
+        :`<input data-rk="rate" type="number" inputmode="decimal" step="any" min="0" value="${esc(r.rate)}"> ${esc(unitPlural(it))} per day per AT location per <input data-rk="per" type="number" inputmode="numeric" min="1" value="${esc(r.per)}"> courts`}</div></div>`;}).join("")}</div>`;
+    h+=`<div class="card"><h3>Full box contents</h3><p class="sub">How many of each item a fully stocked box has.</p>
       ${BOX_SECTIONS.map((sec,si)=>`<p style="margin:14px 0 2px;font-weight:600">${esc(sec.title)}</p>${STD_BOX_ITEMS.filter(i=>i.sec===si).map(it=>
-        `<div class="lvl"><span>${esc(it.name)}${it.note?`<span class="note">${esc(it.note)}</span>`:""}</span><input data-lvl="${it.id}" type="number" inputmode="decimal" step="any" min="0" value="${target(it)}"></div>`).join("")}`).join("")}</div>`;
+        `<div class="lvl"><span>${esc(it.name)}</span><span class="lvl-in"><input data-lvl="${it.id}" type="number" inputmode="decimal" step="any" min="0" value="${target(it)}"><small>${esc(unitWord(it,target(it)))}</small></span></div>`).join("")}`).join("")}</div>`;
     h+=extrasSetupHTML();
     if(!LOCAL)h+=`<div class="card"><button class="link danger" id="s-lock">Lock setup on this device</button></div>`;
   }
@@ -679,43 +936,56 @@ function renderSetup(){
     return;
   }
   if($("#s-lock"))$("#s-lock").onclick=()=>{L.admin="";persist();render();};
-  wireExtrasSetup();
-  $("#add-t").onclick=()=>{L.cfg.tournaments=[...tours(),{id:"t"+Date.now().toString(36),name:"",date:"",courts:"",locs:"",days:"",boxes:[]}];saveCfg("tournaments",0);render();};
+  const sorg=curOrg();
+  main().querySelectorAll("details.ev").forEach(d=>d.addEventListener("toggle",()=>{if(!d.isConnected)return;if(d.open){L.openEv=sorg+"|"+d.dataset.ev;main().querySelectorAll("details.ev").forEach(o=>{if(o.dataset.ev!==d.dataset.ev&&o.open)o.open=false;});}else if(L.openEv===sorg+"|"+d.dataset.ev)L.openEv="";persist();}));
+  const newTour=(name,src)=>{const def=(EVENTS[sorg]||[]).find(e=>e[0]===name);
+    const t={id:"t"+Date.now().toString(36)+Math.random().toString(36).slice(2,4),org:sorg,name,date:"",
+      courts:src?src.courts:"",locs:src?src.locs:(def?String(def[1]):""),days:src?src.days:"",boxes:src?[...(src.boxes||[])]:boxes().map(b=>b.id)};
+    L.cfg.tournaments=[...tours(),t];L.openEv=sorg+"|"+name;saveCfg("tournaments",0);renderSetup();
+    setTimeout(()=>{const c=main().querySelector(`[data-t="${t.id}"]`);if(c){if(c.scrollIntoView)c.scrollIntoView({block:"center"});(c.querySelector("[data-k=name]")||c.querySelector("[data-k=date]")).focus();}},50);};
+  main().querySelectorAll("[data-add-date]").forEach(b=>b.onclick=()=>{const name=b.dataset.addDate;
+    const prev=sortedTours().filter(t=>tourOrg(t)===sorg&&t.name===name);newTour(name,prev[prev.length-1]);});
+  $("#add-custom").onclick=()=>newTour("",null);
   main().querySelectorAll("[data-t]").forEach(card=>{
-    const t=tours()[+card.dataset.t];
-    card.querySelectorAll("[data-k]").forEach(inp=>inp.oninput=()=>{t[inp.dataset.k]=inp.value;saveCfg("tournaments");});
+    const tid=card.dataset.t, T=()=>tourById(tid);
+    card.querySelectorAll("[data-k]").forEach(inp=>{
+      inp.oninput=()=>{const t=T();if(!t)return;t[inp.dataset.k]=inp.value;saveCfg("tournaments");renderTabs();};
+      if(inp.dataset.k==="date"||inp.dataset.k==="name")inp.onchange=()=>{const t=T();if(t&&inp.dataset.k==="name")L.openEv=sorg+"|"+t.name;saveCfg("tournaments");persist();renderSetup();};
+    });
     card.querySelectorAll("[data-box]").forEach(cb=>cb.onchange=()=>{
-      const b=cb.dataset.box;
-      tours().forEach(o=>o.boxes=(o.boxes||[]).filter(x=>x!==b));
-      if(cb.checked)t.boxes.push(b);
-      saveCfg("tournaments",0);render();
+      const t=T();if(!t)return;const b=cb.dataset.box;
+      t.boxes=(t.boxes||[]).filter(x=>x!==b);if(cb.checked)t.boxes.push(b);
+      saveCfg("tournaments",0);renderSetup();
     });
     card.querySelector("[data-del-t]").onclick=async()=>{
-      if(!await confirmDlg(`Remove ${t.name||"this tournament"}?`,"Its boxes become unassigned. Counts aren’t affected.","Remove"))return;
-      L.cfg.tournaments=tours().filter(x=>x!==t);saveCfg("tournaments",0);render();
+      const t=T();if(!t)return;
+      if(!await confirmDlg(`Remove ${tourLabel(t)}?`,"This also deletes every count logged for this date, for everyone. This can’t be undone.","Remove"))return;
+      if(!await clearLocs(boxes().map(b=>sessLoc(tid,b.id)))){toast("Couldn’t remove while offline.");return;}
+      Object.keys(L.counts).forEach(k=>{if(k.startsWith(tid+"~"))delete L.counts[k];});
+      L.cfg.tournaments=tours().filter(x=>x.id!==tid);saveCfg("tournaments",0);render();
     };
   });
-  $("#add-b").onclick=()=>{const id="b"+Date.now().toString(36);L.cfg.boxes=[...boxes(),{id,name:`Box ${boxes().length+1}`}];saveCfg("boxes",0);render();};
+  $("#add-b").onclick=()=>{const o=curOrg();const id=(o==="JVA"?"b":"s")+Date.now().toString(36);
+    const n=boxes().length;const name=o==="JVA"?`Box ${n+1}`:`Box ${String.fromCharCode(65+n)}`;
+    allBoxes().push({id,name,org:o});saveCfg("boxes",0);render();};
   main().querySelectorAll("[data-b]").forEach(row=>{
-    const b=boxes().find(x=>x.id===row.dataset.b);
-    row.querySelector(".bname").oninput=e=>{b.name=e.target.value;saveCfg("boxes");renderTabs();};
+    const bid=row.dataset.b, B=()=>allBoxes().find(x=>x.id===bid);
+    row.querySelector(".bname").oninput=e=>{const b=B();if(!b)return;b.name=e.target.value;saveCfg("boxes");renderTabs();};
     row.querySelector("[data-del-b]").onclick=async()=>{
-      if(!await confirmDlg(`Remove ${b.name}?`,"This deletes the box and all of its counts for everyone. This can’t be undone.","Remove box"))return;
-      if(!LOCAL){try{const r=await api({action:"clear",loc:b.id});if(!r.ok)throw r;}catch(e){toast("Couldn’t remove while offline.");return;}}
-      Object.keys(L.counts).forEach(k=>{if(k.startsWith(b.id+"|"))delete L.counts[k];});
-      L.cfg.boxes=boxes().filter(x=>x!==b);
-      tours().forEach(o=>o.boxes=(o.boxes||[]).filter(x=>x!==b.id));
+      const b=B();if(!b)return;
+      if(!await confirmDlg(`Remove ${b.name}?`,"This deletes the box and all of its counts from every tournament, for everyone. This can’t be undone.","Remove box"))return;
+      if(!await clearLocs([bid,...tours().map(t=>sessLoc(t.id,bid))])){toast("Couldn’t remove while offline.");return;}
+      Object.keys(L.counts).forEach(k=>{const loc=k.split("|")[0];if(loc===bid||loc.endsWith("~"+bid))delete L.counts[k];});
+      L.cfg.boxes=allBoxes().filter(x=>x.id!==bid);
+      tours().forEach(o=>o.boxes=(o.boxes||[]).filter(x=>x!==bid));
       saveCfg("boxes",0);saveCfg("tournaments",0);render();
     };
   });
   main().querySelectorAll("[data-r]").forEach(row=>row.querySelectorAll("[data-rk]").forEach(inp=>inp.oninput=()=>{
     const id=row.dataset.r;L.cfg.rates[id]=Object.assign({},L.cfg.rates[id]||{},{[inp.dataset.rk]:inp.value});saveCfg("rates");}));
   main().querySelectorAll("[data-lvl]").forEach(inp=>inp.oninput=()=>{
-    L.cfg.targets[inp.dataset.lvl]=inp.value===""?null:num(inp.value);saveCfg("targets");});
-}
-function tourSummary(){
-  if(!tours().length)return `<div class="card"><h3>Next tournaments</h3><p class="empty">None set up yet.</p></div>`;
-  return `<div class="card"><h3>Next tournaments</h3><ul class="mini">${tours().map(t=>`<li><span>${esc(t.name||"Untitled")}${t.date?`, ${fmtDate(t.date)}`:""}</span><span>${(t.boxes||[]).map(boxName).map(esc).join(", ")||"No boxes"}</span></li>`).join("")}</ul></div>`;
+    L.cfg.targets[inp.dataset.lvl]=inp.value===""?null:num(inp.value);saveCfg("targets");
+    const it=itm(inp.dataset.lvl);inp.nextElementSibling.textContent=unitWord(it,target(it));});
 }
 
 /* ---------- exports ---------- */
@@ -726,19 +996,30 @@ function saveFile(name,data,type){
   setTimeout(()=>URL.revokeObjectURL(url),4000);
 }
 const csvCell=v=>{v=String(v??"");return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v;};
+function boxRows(tid,bid){
+  const loc=sessLoc(tid,bid);
+  return boxItemsAll().map(it=>{const pre=get(loc,it.id,"pre"),post=get(loc,it.id,"post"),t=target(it),cur=post!==null?post:pre;
+    return {it,full:t,pre,post,used:pre!==null&&post!==null?fmt(Math.max(0,pre-post)):"",restock:cur!==null&&cur<t?fmt(t-cur):""};});
+}
+const sessionHasCounts=(tid,bid)=>boxItemsAll().some(it=>get(sessLoc(tid,bid),it.id,"pre")!==null||get(sessLoc(tid,bid),it.id,"post")!==null);
 function buildCSV(){
   const o=[];
   o.push(["Medical Supply Inventory"],["Exported",new Date().toLocaleString(),"By",L.name||""],[]);
-  o.push(["Upcoming tournaments"],["Tournament","Date","Courts","AT locations","Days","Boxes"]);
-  tours().forEach(t=>o.push([t.name,t.date,num(t.courts),num(t.locs),num(t.days),(t.boxes||[]).map(boxName).join("; ")]));
-  o.push([],["Order list"],["Item","Pack size","Needed","In excess","To order"]);
-  orderRows().forEach(r=>o.push([r.it.name,r.it.note,fmt(r.need),r.ex===null?"":r.ex,fmt(r.order)]));
-  o.push([],["Box counts"],["Box","Assigned to","Section","Item","Pack size","Restock level","Pre count","Post count","Used","Restock qty"]);
-  boxes().forEach(b=>{const t=tourForBox(b.id);boxItemsAll().forEach(it=>{const pre=get(b.id,it.id,"pre"),post=get(b.id,it.id,"post");
-    o.push([b.name,t?t.name:"",secTitle(it),it.name,it.note,target(it),pre??"",post??"",pre!==null&&post!==null?fmt(Math.max(0,pre-post)):"",shortfall(b.id,it)||""]);});});
-  o.push([],["Excess inventory"],["Section","Item","Pack size","On hand","Needed for upcoming","Short","Notes"]);
-  excessItemsAll().forEach(it=>{const c=get("excess",it.id,"now"),n=totalNeed(it);
-    o.push([it.court?COURT_SECTION.title:secTitle(it),it.name,it.note,c??"",n||"",c!==null&&c<n?fmt(n-c):"",L.cfg.comments[it.id]||""]);});
+  o.push(["Tournament history"],["Organization","Tournament","Start date","Box","Section","Item","Unit","Full box","Pre count","Post count","Used","Restock"]);
+  ORGS.forEach(org=>sessions(org).forEach(tid=>{const t=tourById(tid);
+    boxes(org).forEach(b=>{if(!sessionHasCounts(tid,b.id))return;
+      boxRows(tid,b.id).forEach(r=>o.push([org,t?t.name:sessName(tid),t?t.date:"",b.name,secTitle(r.it),r.it.name,unitPlural(r.it),r.full,r.pre??"",r.post??"",r.used,r.restock]));});}));
+  o.push([],["Tournaments"],["Organization","Tournament","Start date","Courts","AT locations","Days","Boxes"]);
+  sortedTours().forEach(t=>o.push([tourOrg(t),t.name,t.date,num(t.courts),num(t.locs),num(t.days),(t.boxes||[]).map(boxName).join("; ")]));
+  ORGS.forEach(org=>{const UP=upcoming(org);
+    o.push([],[`${org} order list (all upcoming ${org} tournaments)`],["Item","Unit","Needed","In excess","To order"]);
+    orderRows(UP).forEach(r=>o.push([r.it.name,unitPlural(r.it),fmt(r.need),r.ex===null?"":r.ex,fmt(r.order)]));
+  });
+  ORGS.forEach(org=>{const N=needs(upcoming(org));const xl=excessLoc(org);
+    o.push([],[`${org} excess inventory`],["Section","Item","Unit","On hand","Needed for upcoming","Short","Notes"]);
+    excessItemsAll().forEach(it=>{const c=get(xl,it.id,"now"),n=N[it.id]||0;
+      o.push([secTitle(it),it.name,unitPlural(it),c??"",n||"",c!==null&&c<n?fmt(n-c):"",L.cfg.comments[it.id]||""]);});
+  });
   return "\ufeff"+o.map(r=>r.map(csvCell).join(",")).join("\r\n");
 }
 const pt=t=>String(t??"").replace(/[’‘]/g,"'").replace(/[“”]/g,'"').replace(/[–—−]/g,"-");
@@ -747,35 +1028,38 @@ function buildPDF(){
   const Lm=40;let y=48;const head={fillColor:[30,79,156],textColor:255,fontStyle:"bold"};
   const H=(txt,size=13)=>{if(y>700){doc.addPage();y=48;}doc.setFont("helvetica","bold");doc.setFontSize(size);doc.setTextColor(0);doc.text(pt(txt),Lm,y);y+=8;};
   const tbl=(hd,body,opts={})=>{doc.autoTable(Object.assign({startY:y,margin:{left:Lm,right:Lm},headStyles:head,styles:{fontSize:9}},opts,{head:[hd],body:body.map(r=>r.map(pt))}));y=doc.lastAutoTable.finalY+22;};
-  doc.setFont("helvetica","bold");doc.setFontSize(18);doc.text("Medical Supply Inventory",Lm,y);y+=18;
+  const tid=curTour();const t=tourById(tid);
+  doc.setFont("helvetica","bold");doc.setFontSize(18);doc.text("Medical Supply Inventory",Lm,y);y+=20;
+  doc.setFontSize(13);doc.text(pt(tid?(t?orgLabel(t):sessName(tid)):"No tournament selected"),Lm,y);y+=16;
   doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(100);
+  if(t){doc.text(pt([`${num(t.courts)} courts`,`${num(t.locs)} AT locations`,`${num(t.days)} days`].filter(Boolean).join(", ")),Lm,y);y+=14;}
   doc.text(pt(`Exported ${new Date().toLocaleString()}${L.name?` by ${L.name}`:""}`),Lm,y);y+=26;
-  H("Upcoming tournaments");
-  if(tours().length)tbl(["Tournament","Date","Courts","AT locations","Days","Boxes"],tours().map(t=>[t.name||"Untitled",fmtDate(t.date),num(t.courts),num(t.locs),num(t.days),(t.boxes||[]).map(boxName).join(", ")]));
-  else{y+=6;doc.setFont("helvetica","normal");doc.setFontSize(10);doc.text("None set up.",Lm,y);y+=22;}
-  H("Order list");
-  const O=orderRows();
-  if(O.length)tbl(["Item","Needed","In excess","To order"],O.map(r=>[r.it.name+(r.it.note?` (${r.it.note})`:""),fmt(r.need),r.ex===null?"-":r.ex,fmt(r.order)]),
-    {columnStyles:{1:{halign:"center"},2:{halign:"center"},3:{halign:"center",fontStyle:"bold",textColor:[192,57,30]}}});
+  const center={halign:"center"};
+  if(tid){
+    const bx=curBoxes().filter(b=>sessionHasCounts(tid,b.id)||((t&&t.boxes)||[]).includes(b.id));
+    bx.forEach(b=>{H(boxName(b.id));
+      tbl(["Item","Full box","Pre","Post","Used","Restock"],boxRows(tid,b.id).map(r=>[r.it.name,qty(r.it,r.full),r.pre??"-",r.post??"-",r.used,r.restock]),
+        {columnStyles:{2:center,3:center,4:center,5:{halign:"center",fontStyle:"bold",textColor:[192,57,30]}}});});
+  }
+  H(`${curOrg()} order list (all upcoming ${curOrg()} tournaments)`);
+  const O=orderRows(upcoming());
+  if(O.length)tbl(["Item","Needed","In excess","To order"],O.map(r=>[r.it.name,qty(r.it,r.need),r.ex===null?"-":r.ex,qty(r.it,r.order)]),
+    {columnStyles:{2:center,3:{fontStyle:"bold",textColor:[192,57,30]}}});
   else{y+=6;doc.setFont("helvetica","normal");doc.setFontSize(10);doc.text("Nothing needed.",Lm,y);y+=22;}
-  boxes().forEach(b=>{const t=tourForBox(b.id);
-    H(`${b.name}${t?` (for ${t.name||"tournament"})`:""}`);
-    tbl(["Item","Level","Pre","Post","Used","Restock"],boxItemsAll().map(it=>{const pre=get(b.id,it.id,"pre"),post=get(b.id,it.id,"post");
-      return [it.name+(it.note?` (${it.note})`:""),target(it),pre??"-",post??"-",pre!==null&&post!==null?fmt(Math.max(0,pre-post)):"",shortfall(b.id,it)||""];}),
-      {columnStyles:{1:{halign:"center"},2:{halign:"center"},3:{halign:"center"},4:{halign:"center"},5:{halign:"center",fontStyle:"bold",textColor:[192,57,30]}}});
-  });
-  H("Excess inventory");
-  tbl(["Item","On hand","Needed","Short"],excessItemsAll().map(it=>{const c=get("excess",it.id,"now"),n=totalNeed(it);
-    return [it.name+(it.note?` (${it.note})`:"")+(L.cfg.comments[it.id]?`\nNote: ${L.cfg.comments[it.id]}`:""),c??"-",n||"",c!==null&&c<n?fmt(n-c):""];}),
-    {columnStyles:{1:{halign:"center"},2:{halign:"center"},3:{halign:"center",fontStyle:"bold",textColor:[192,57,30]}}});
+  const N=needs(upcoming());
+  H(`${curOrg()} excess inventory`);
+  tbl(["Item","On hand","Needed","Short"],excessItemsAll().map(it=>{const c=get(excessLoc(),it.id,"now"),n=N[it.id]||0;
+    return [it.name+(unitPlural(it)?` (${unitPlural(it)})`:"")+(L.cfg.comments[it.id]?`\nNote: ${L.cfg.comments[it.id]}`:""),c??"-",n||"",c!==null&&c<n?fmt(n-c):""];}),
+    {columnStyles:{1:center,2:center,3:{halign:"center",fontStyle:"bold",textColor:[192,57,30]}}});
   const P=doc.getNumberOfPages();
   for(let p=1;p<=P;p++){doc.setPage(p);doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(120);
     doc.text(`Page ${p} of ${P}`,doc.internal.pageSize.getWidth()-Lm,doc.internal.pageSize.getHeight()-20,{align:"right"});}
   return doc.output("blob");
 }
+const fileBase=()=>{const n=curTour()?sessName(curTour()):"inventory";return n.replace(/[^a-z0-9]+/gi,"-").replace(/^-|-$/g,"").toLowerCase()||"inventory";};
 $("#pdf").onclick=()=>{if(!window.jspdf){toast("PDF tools didn’t load. Check your connection and reload.");return;}
-  try{saveFile(`medical-inventory-${stamp()}.pdf`,buildPDF(),"application/pdf");}catch(e){toast("Couldn’t build the PDF");}};
-$("#csv").onclick=()=>{try{saveFile(`medical-inventory-${stamp()}.csv`,buildCSV(),"text/csv;charset=utf-8");}catch(e){toast("Couldn’t build the CSV");}};
+  try{saveFile(`${fileBase()}-${stamp()}.pdf`,buildPDF(),"application/pdf");}catch(e){toast("Couldn’t build the PDF");}};
+$("#csv").onclick=()=>{try{saveFile(`medical-inventory-history-${stamp()}.csv`,buildCSV(),"text/csv;charset=utf-8");}catch(e){toast("Couldn’t build the CSV");}};
 
 /* ---------- connect ---------- */
 function showConnect(err){
