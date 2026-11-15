@@ -119,7 +119,7 @@ table.t{width:100%;border-collapse:collapse;font-size:15px}
 .t tr:last-child td{border-bottom:0}
 .t .n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .t .hot{color:var(--flag);font-weight:700}
-.t input{width:58px;border:1px solid var(--line);border-radius:6px;padding:5px;background:var(--bg);text-align:center;font-size:15px}
+.t input{width:56px;border:1px solid var(--line);border-radius:6px;padding:5px 2px;background:var(--bg);text-align:center;font-size:15px}
 .t .note{white-space:normal}
 .tw{overflow-x:auto}
 .mini{margin:6px 0 0;padding:0;list-style:none;font-size:15px}
@@ -249,13 +249,13 @@ const LOCAL = !API_URL;
 const LS = "msi-v2";
 
 const U={jar:["jar","jars"],box:["box","boxes"],bottle:["bottle","bottles"],ampule:["ampule","ampules"],
-  roll:["roll","rolls"],pack:["pack","packs"],tube:["tube","tubes"],sleeve:["sleeve","sleeves"],wrap:["wrap","wraps"]};
+  roll:["roll","rolls"],pack:["pack","packs"],tube:["tube","tubes"],sleeve:["sleeve","sleeves"],wrap:["wrap","wraps"],can:["can","cans"]};
 // [id, name, full-box quantity, unit]
 const BOX_SECTIONS = [
   {title:"Wound care", items:[
     ["2nd-skin","2nd Skin",1,"jar"],["band-aids-1-3-strips","Bandaids – 1x3 Strips",2,"box","100 per box"],
     ["band-aids-4-wing","Bandaids – 4 Wing",2,"box","50 per box"],["band-aids-knuckle","Bandaids – Knuckle",2,"box","100 per box"],
-    ["eye-drops","Eye Drops",1,"bottle"],["hand-sanitizer","Hand Sanitizer",1,"bottle"],
+    ["eye-drops","Eye Drops",1,"bottle"],["hibiclens","Hibiclens",1,"bottle","4 oz"],["hand-sanitizer","Hand Sanitizer",1,"bottle"],
     ["hydrocortisone-single-packets","Hydrocortisone Single Packets",1,"box","144 per box"],["hydrogen-peroxide","Hydrogen Peroxide",1,"bottle"],
     ["isopropyl-alcohol","Isopropyl Alcohol",1,"bottle"],["mastisol","Mastisol",10,"ampule"],
     ["non-adherent-pads","Non Adherent Pads",1,"box"],["nose-plugs","Nose Plugs",4,"roll"],
@@ -264,7 +264,7 @@ const BOX_SECTIONS = [
     ["triple-antibiotic-single-packets","Triple Antibiotic Single Packets",1,"box"],["wound-wash-saline-spray","Wound Wash Saline Spray",1,"bottle","7.4 oz can"]]},
   {title:"Tapes", items:[
     ["cover-roll","Cover Roll",1,"roll"],["1-inch-elastikon-or-ac-plus","1-inch Elastikon",1,"box","12 rolls per box"],
-    ["inch-tape","½-inch White Tape",2,"box"],["2-inch-elastikon-or-ac-plus","2-inch Elastikon",1,"box","6 rolls per box"]]},
+    ["inch-tape","½-inch White Tape",2,"box"],["2-inch-elastikon-or-ac-plus","2-inch Elastikon",1,"box","6 rolls per box"],["tuf-skin","Tuf-Skin",1,"can","4 oz spray"]]},
   {title:"Splints & bracing", items:[
     ["36-sam-splint","36\" SAM Splint",3,""],["4-inch-single","4-inch Single",6,"wrap"],
     ["6-inch-double","6-inch Double",4,"wrap"],["6-inch-single","6-inch Single",6,"wrap"],
@@ -277,13 +277,16 @@ const BOX_SECTIONS = [
     ["tampons","Tampons",1,"box"],["tums-single-dose-packs","Tums – Single Dose Packs",1,"box","75 two-packs per box"]]}
 ];
 const COURT_SECTION = {title:"Tournament supplies", court:true, items:[
-  // tier = amount per AT location for the whole tournament: [Small, Medium, Large] by court count
-  ["1-white-tape","1½\" White Tape",{tier:[2,4,6]},"box"],
-  ["ecoflex-2","EcoFlex 2\"",{tier:[1,2,3]},"box"],
-  ["flexi-wrap","Flexi-wrap",{tier:[0,0,0]},"roll"],
-  ["ice-bags","Ice Bags",{ice:true,tier:[0.5,0.5,1]},"roll"],
-  ["powerflex-1","EcoFlex 1\"",{tier:[1,2,3]},"box"],
-  ["prewrap","Prewrap",{tier:[1,1,2]},"box"]]};
+  // tier = amount per AT location for the whole tournament: [League Play, Small, Medium, Large] by court count
+  ["1-white-tape","1½\" White Tape",{tier:[1,2,4,6]},"box"],
+  ["ecoflex-2","EcoFlex 2\"",{tier:[1,2,2,3]},"box"],
+  ["flexi-wrap","Flexi-wrap",{tier:[1,1,1,2]},"roll"],
+  ["ice-bags","Ice Bags",{ice:true,tier:[0.25,0.5,0.5,1]},"roll"],
+  ["powerflex-1","EcoFlex 1\"",{tier:[0.5,1,2,3]},"box"],
+  ["prewrap","Prewrap",{tier:[0.5,1,1,2]},"box"]]};
+/* kept in excess only, never packed in a box */
+const EXONLY_SECTION={title:"Excess only", exonly:true, items:[
+  ["shark-blades","Shark Replacement Blades",0,"box","10 per box"]]};
 
 /* Henry Schein catalog: item id -> [item code, description, inventory units per Henry Schein selling unit] */
 const HS={
@@ -331,15 +334,19 @@ const HS={
   "shark":["1345242","Shark Tape Cutter 8-1/4\" Valox Resin/Fiberglass Ea"],
   "stop-pain-single-dose-packs":["1432175","Stopain Clinical Gel 100/Bx"],
   "tampons":["1235145","Tampax Sanitary Tampon Regular 10/Bx"],
+  "hibiclens":["1078796","Hibiclens Pre-Op Scrub 4 oz Flip Top Bottle Unscented 4oz/Bt"],
+  "tuf-skin":["1347944","Tuf-Skin Taping Spray 4oz Colorless"],
+  "shark-blades":["1345055","Shark Steel Non-Sterile Tape Cutter Blade Standard 10/Bx"],
   "tums-single-dose-packs":["3500009","Medique Ban-acid Antacid Tablets 750mg Berry 75x2/Bx"]
 };
 
-const mk=(sec,si)=>sec.items.map(([id,name,base,unit,note])=>({id,name,base,unit,note:note||"",sec:si,court:!!sec.court,ice:!!(base&&base.ice)}));
+const mk=(sec,si)=>sec.items.map(([id,name,base,unit,note])=>({id,name,base,unit,note:note||"",sec:si,court:!!sec.court,exonly:!!sec.exonly,ice:!!(base&&base.ice)}));
 const STD_BOX_ITEMS=BOX_SECTIONS.flatMap(mk);
 const COURT_ITEMS=mk(COURT_SECTION,"c");
-const ITEM={};[...STD_BOX_ITEMS,...COURT_ITEMS].forEach(i=>ITEM[i.id]=i);
+const EXONLY_ITEMS=mk(EXONLY_SECTION,"e");
+const ITEM={};[...STD_BOX_ITEMS,...COURT_ITEMS,...EXONLY_ITEMS].forEach(i=>ITEM[i.id]=i);
 const EXTRA_SECTION={title:"Extra supplies",extra:true};
-const EXCESS_SECTIONS=[COURT_SECTION,...BOX_SECTIONS,EXTRA_SECTION];
+const EXCESS_SECTIONS=[COURT_SECTION,...BOX_SECTIONS,EXONLY_SECTION,EXTRA_SECTION];
 const BOX_TAB_SECTIONS=[...BOX_SECTIONS,EXTRA_SECTION];
 
 const ORGS=["JVA","3Step"];
@@ -385,21 +392,25 @@ function allBoxes(){
 const boxes=(org)=>allBoxes().filter(b=>b.org===(org||curOrg()));
 const extras=()=>(L.cfg.extras||[]).map(x=>({id:x.id,name:x.name||"Unnamed item",unit:x.unit||x.note||"",base:x.inBoxes?num(x.level):0,sec:"x",extra:true,inBoxes:!!x.inBoxes}));
 const boxItemsAll=()=>[...STD_BOX_ITEMS,...extras().filter(x=>x.inBoxes)];
-const excessItemsAll=()=>[...COURT_ITEMS,...STD_BOX_ITEMS,...extras()];
+const excessItemsAll=()=>[...COURT_ITEMS,...STD_BOX_ITEMS,...EXONLY_ITEMS,...extras()];
 const itm=id=>ITEM[id]||extras().find(x=>x.id===id);
-const secTitle=it=>it.court?COURT_SECTION.title:it.extra?EXTRA_SECTION.title:BOX_SECTIONS[it.sec].title;
+const secTitle=it=>it.court?COURT_SECTION.title:it.exonly?EXONLY_SECTION.title:it.extra?EXTRA_SECTION.title:BOX_SECTIONS[it.sec].title;
 const BOX_COLORS=["#0F7C7C","#C2570A","#6B3FA0","#2E7D32","#B0306A","#8A6A00","#3D5A80","#9C3D2E"];
 const boxColor=id=>{const bx=allBoxes().find(b=>b.id===id);const i=bx?boxes(bx.org).indexOf(bx):0;return BOX_COLORS[(i<0?0:i)%BOX_COLORS.length];};
 const dot=id=>`<span class="bdot" style="background:${boxColor(id)}"></span>`;
 const boxName=id=>(allBoxes().find(b=>b.id===id)||{}).name||"Box";
 const target=it=>has(L.cfg.targets[it.id])?num(L.cfg.targets[it.id]):it.base;
 /* tournament supplies: court-size tiers (saved inside cfg.rates so old per-day rates no longer apply) */
-const TIER_NAMES=["Small","Medium","Large"];
+const TIER_NAMES=["League Play","Small","Medium","Large"];
+const TIER_DEFAULT=2; // locations without a court count use Medium
 const rates=()=>(L.cfg.rates&&typeof L.cfg.rates==="object"&&!Array.isArray(L.cfg.rates))?L.cfg.rates:(L.cfg.rates={});
-const tierCuts=()=>{const c=(rates()._tiers||{}).upTo||[];return [has(c[0])?num(c[0]):6,has(c[1])?num(c[1]):12];};
-const tierAmts=it=>{const o=(rates()[it.id]||{}).tier;return [0,1,2].map(i=>o&&has(o[i])?num(o[i]):it.base.tier[i]);};
-const tierOf=c=>{const [a,b]=tierCuts();return c<=a?0:c<=b?1:2;};
-function tierLabel(i){const [a,b]=tierCuts();return i===0?`Small (up to ${a} courts)`:i===1?`Medium (${a+1}–${b} courts)`:`Large (${b+1}+ courts)`;}
+/* upper court limit of League Play, Small, Medium; anything above is Large */
+const TIER_CUTS=[14,40,80];
+const tierCuts=()=>{const c=(rates()._tiers4||{}).upTo||[];return TIER_CUTS.map((d,i)=>has(c[i])?num(c[i]):d);};
+const tierAmts=it=>{const o=(rates()[it.id]||{}).tier4;return TIER_NAMES.map((n,i)=>o&&has(o[i])?num(o[i]):it.base.tier[i]);};
+const tierOf=c=>{const k=tierCuts().findIndex(x=>c<=x);return k<0?TIER_NAMES.length-1:k;};
+function tierLabel(i){const c=tierCuts();const lo=i?c[i-1]+1:0;
+  return `${TIER_NAMES[i]} (${i===0?`up to ${c[0]}`:i===c.length?`${lo}+`:`${lo}–${c[i]}`} courts)`;}
 /* court count per AT location, null when not entered */
 const locCourts=t=>{const n=Math.max(0,Math.floor(num(t.locs)));const a=String(t.courts??"").split(",");
   return Array.from({length:n},(_,i)=>{const v=(a[i]||"").trim();return v===""?null:num(v);});};
@@ -482,7 +493,7 @@ const uncounted=bid=>boxItemsAll().filter(it=>!boxState(bid,it.id)).length;
 /* each AT location gets its tier amount for the whole tournament; locations without a court count use Medium */
 function courtNeed(t,it){
   const A=tierAmts(it);
-  return Math.ceil(locCourts(t).reduce((s,c)=>s+A[c===null?1:tierOf(c)],0)-1e-9);
+  return Math.ceil(locCourts(t).reduce((s,c)=>s+A[c===null?TIER_DEFAULT:tierOf(c)],0)-1e-9);
 }
 /* plan: each box counted once (first upcoming tournament it's assigned to) */
 function plan(list){
@@ -496,6 +507,7 @@ function needs(list){
   excessItemsAll().forEach(it=>{
     let n=0;
     if(it.court)list.forEach(t=>n+=courtNeed(t,it));
+    else if(it.exonly)n=0;
     else if(!it.extra||it.inBoxes)P.boxes.forEach(b=>n+=shortfallIn(b,it,orgOf(list)));
     m[it.id]=n;
   });
@@ -737,7 +749,7 @@ function updateRows(skipRow){
 }
 function sectionsHTML(sections,withTarget){
   return sections.map((sec,i)=>{
-    const list=sec.court?COURT_ITEMS:sec.extra?(withTarget?extras().filter(x=>x.inBoxes):extras()):STD_BOX_ITEMS.filter(x=>x.sec===BOX_SECTIONS.indexOf(sec));
+    const list=sec.court?COURT_ITEMS:sec.exonly?EXONLY_ITEMS:sec.extra?(withTarget?extras().filter(x=>x.inBoxes):extras()):STD_BOX_ITEMS.filter(x=>x.sec===BOX_SECTIONS.indexOf(sec));
     return `<section class="grp${sec.extra?" extra-grp":""}" data-s="${i}"><div class="grp-h">${esc(sec.title)}<small></small></div>
     ${list.length?`<div class="list">${list.map(it=>rowHTML(it,withTarget&&!(it.extra&&!it.base))).join("")}</div>`:""}
     ${sec.extra?`<p class="hint" style="margin:${list.length?"8px":"0"} 4px 8px">${withTarget?"Items added as “kept in every box” show here.":"Anything not on the standard list."}</p><button class="btn ghost" style="width:100%" data-add-extra>Add extra supply</button>`:""}
@@ -1012,8 +1024,8 @@ function renderSetup(){
         <button class="link danger" data-del-b>Remove</button></div>`).join("")}</div>`;
     const cuts=tierCuts();
     h+=`<div class="card"><h3>Tournament supplies</h3><p class="sub">Each AT location gets a set amount for the whole tournament, based on how many courts it covers. Enter the courts for each location on the tournament above. A location with no court count uses Medium.</p>
-      <div class="grid2" style="margin-top:10px"><label class="field">Small: up to (courts)<input data-cut="0" type="number" inputmode="numeric" min="0" value="${cuts[0]}"></label>
-        <label class="field">Medium: up to (courts)<input data-cut="1" type="number" inputmode="numeric" min="0" value="${cuts[1]}"></label></div>
+      <p class="hint" style="margin-top:10px">Most courts in each size (anything more is Large)</p>
+      <div class="grid3" style="margin-top:4px">${cuts.map((c,i)=>`<label class="field">${TIER_NAMES[i]}<input data-cut="${i}" type="number" inputmode="numeric" min="0" value="${c}"></label>`).join("")}</div>
       <p class="hint" id="tier-hint">${esc(TIER_NAMES.map((n,i)=>tierLabel(i)).join(" · "))}</p>
       <div class="tw" style="margin-top:8px"><table class="t"><thead><tr><th>Per AT location</th>${TIER_NAMES.map(n=>`<th class="n">${n}</th>`).join("")}</tr></thead><tbody>
       ${COURT_ITEMS.map(it=>`<tr data-r="${it.id}"><td>${esc(it.name)}<span class="note">${esc(unitPlural(it))}</span></td>${tierAmts(it).map((v,i)=>
@@ -1089,9 +1101,9 @@ function renderSetup(){
   });
   main().querySelectorAll("[data-r]").forEach(row=>row.querySelectorAll("[data-tier]").forEach(inp=>inp.oninput=()=>{
     const id=row.dataset.r;const A=tierAmts(itm(id));A[+inp.dataset.tier]=inp.value===""?0:Math.max(0,num(inp.value));
-    rates()[id]=Object.assign({},rates()[id]||{},{tier:A});saveCfg("rates");}));
+    rates()[id]=Object.assign({},rates()[id]||{},{tier4:A});saveCfg("rates");}));
   main().querySelectorAll("[data-cut]").forEach(inp=>inp.oninput=()=>{
-    const c=tierCuts();c[+inp.dataset.cut]=Math.max(0,num(inp.value));rates()._tiers={upTo:c};saveCfg("rates");
+    const c=tierCuts();c[+inp.dataset.cut]=Math.max(0,num(inp.value));rates()._tiers4={upTo:c};saveCfg("rates");
     $("#tier-hint").textContent=TIER_NAMES.map((n,i)=>tierLabel(i)).join(" · ");});
   main().querySelectorAll("[data-lvl]").forEach(inp=>inp.oninput=()=>{
     L.cfg.targets[inp.dataset.lvl]=inp.value===""?null:num(inp.value);saveCfg("targets");
