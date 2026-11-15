@@ -440,6 +440,14 @@ function needs(list){
   return m;
 }
 const planList=()=>L.plan!=="all"&&upcoming().some(t=>t.id===L.plan)?[tourById(L.plan)]:upcoming();
+/* next tournament, plus any others starting the same weekend */
+function nextGroup(org){
+  const UP=upcoming(org);if(!UP.length)return [];
+  const f=UP[0];const end=new Date(f.date+"T12:00:00");end.setDate(end.getDate()+Math.max(2,num(f.days)-1));
+  const es=`${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,"0")}-${String(end.getDate()).padStart(2,"0")}`;
+  return UP.filter(t=>t.date<=es);
+}
+const groupNames=G=>G.map(t=>t.name||"Untitled").join(" and ");
 const orgOf=list=>list.length?tourOrg(list[0]):curOrg();
 /* ---------- sync ---------- */
 let loadedOnce=false;
@@ -627,7 +635,8 @@ function wireRows(loc,phaseFn){
 function updateRows(skipRow){
   if(!rowCtx)return;
   const {loc,phaseFn}=rowCtx;const phase=phaseFn();
-  const N=isExcessLoc(loc)?needs(upcoming()):null;
+  const G=isExcessLoc(loc)?nextGroup():[];
+  const N=isExcessLoc(loc)?needs(G):null;
   const [tid,bid]=loc.includes("~")?loc.split("~"):[LEGACY,loc];
   let ok=0,fl=0,todo=0;const secFlags={};
   main().querySelectorAll(".item").forEach(row=>{
@@ -637,7 +646,7 @@ function updateRows(skipRow){
     let k="todo",msg="";
     if(isExcessLoc(loc)){
       const need=N[it.id]||0;
-      if(c===null){msg=need?`Upcoming tournaments need ${qty(it,need)}`:"";}
+      if(c===null){msg=need?`${groupNames(G)} need${G.length>1?"":"s"} ${qty(it,need)}`:"";}
       else if(c<need){k="flag";msg=`Short ${qty(it,need-c)} (need ${fmt(need)})`;}
       else{k="ok";msg=need?`Covers the ${fmt(need)} needed`:"Counted";}
     }else{
@@ -769,7 +778,7 @@ function wireExtrasSetup(){
 function renderExcess(){
   main().innerHTML=`<div class="card"><h2>${curOrg()} excess inventory</h2>
     <p class="sub">Everything for ${curOrg()} not packed in a box, including court-based supplies.</p>
-    <p class="hint">Each item shows what upcoming tournaments need from excess, so shortages stand out as you count.</p>
+    <p class="hint">${(()=>{const G=nextGroup();return G.length?`Needs shown are for the next tournament${G.length>1?"s":""}: ${esc(G.map(tourLabel).join(" and "))}.`:"No upcoming tournaments with dates, so no needs are shown.";})()}</p>
     <div class="meter" id="meter"><i class="m-ok"></i><i class="m-flag"></i></div><p class="hint" id="tally"></p>
     ${chipsHTML("Short")}</div>${sectionsHTML(EXCESS_SECTIONS,false)}`;
   wireChips();wireRows(excessLoc(),()=>"now");wireAddExtra(false);updateRows();
@@ -1015,8 +1024,8 @@ function buildCSV(){
     o.push([],[`${org} order list (all upcoming ${org} tournaments)`],["Item","Unit","Needed","In excess","To order"]);
     orderRows(UP).forEach(r=>o.push([r.it.name,unitPlural(r.it),fmt(r.need),r.ex===null?"":r.ex,fmt(r.order)]));
   });
-  ORGS.forEach(org=>{const N=needs(upcoming(org));const xl=excessLoc(org);
-    o.push([],[`${org} excess inventory`],["Section","Item","Unit","On hand","Needed for upcoming","Short","Notes"]);
+  ORGS.forEach(org=>{const G=nextGroup(org);const N=needs(G);const xl=excessLoc(org);
+    o.push([],[`${org} excess inventory`,G.length?`Needed = ${G.map(tourLabel).join(" and ")}`:""],["Section","Item","Unit","On hand","Needed for next tournament","Short","Notes"]);
     excessItemsAll().forEach(it=>{const c=get(xl,it.id,"now"),n=N[it.id]||0;
       o.push([secTitle(it),it.name,unitPlural(it),c??"",n||"",c!==null&&c<n?fmt(n-c):"",L.cfg.comments[it.id]||""]);});
   });
@@ -1046,8 +1055,8 @@ function buildPDF(){
   if(O.length)tbl(["Item","Needed","In excess","To order"],O.map(r=>[r.it.name,qty(r.it,r.need),r.ex===null?"-":r.ex,qty(r.it,r.order)]),
     {columnStyles:{2:center,3:{fontStyle:"bold",textColor:[192,57,30]}}});
   else{y+=6;doc.setFont("helvetica","normal");doc.setFontSize(10);doc.text("Nothing needed.",Lm,y);y+=22;}
-  const N=needs(upcoming());
-  H(`${curOrg()} excess inventory`);
+  const NG=nextGroup();const N=needs(NG);
+  H(`${curOrg()} excess inventory${NG.length?` (needed for ${NG.map(t=>t.name||"Untitled").join(" and ")})`:""}`);
   tbl(["Item","On hand","Needed","Short"],excessItemsAll().map(it=>{const c=get(excessLoc(),it.id,"now"),n=N[it.id]||0;
     return [it.name+(unitPlural(it)?` (${unitPlural(it)})`:"")+(L.cfg.comments[it.id]?`\nNote: ${L.cfg.comments[it.id]}`:""),c??"-",n||"",c!==null&&c<n?fmt(n-c):""];}),
     {columnStyles:{1:center,2:center,3:{halign:"center",fontStyle:"bold",textColor:[192,57,30]}}});
