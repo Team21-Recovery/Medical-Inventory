@@ -98,8 +98,8 @@ section.grp{margin-bottom:18px}
 
 .field{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:500}
 .field input,.field select{border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:var(--bg);font-size:16px;min-width:0;color:var(--ink)}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .wide{grid-column:1/-1}
 .boxpick{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .boxpick label{display:flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:999px;padding:6px 12px 6px 8px;font-weight:600;font-size:14px;cursor:pointer}
@@ -119,6 +119,8 @@ table.t{width:100%;border-collapse:collapse;font-size:15px}
 .t tr:last-child td{border-bottom:0}
 .t .n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .t .hot{color:var(--flag);font-weight:700}
+.t input{width:58px;border:1px solid var(--line);border-radius:6px;padding:5px;background:var(--bg);text-align:center;font-size:15px}
+.t .note{white-space:normal}
 .tw{overflow-x:auto}
 .mini{margin:6px 0 0;padding:0;list-style:none;font-size:15px}
 .mini li{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px dashed var(--line)}
@@ -251,7 +253,7 @@ const U={jar:["jar","jars"],box:["box","boxes"],bottle:["bottle","bottles"],ampu
 // [id, name, full-box quantity, unit]
 const BOX_SECTIONS = [
   {title:"Wound care", items:[
-    ["2nd-skin","2nd Skin",1,"jar"],["band-aids-1-3-strips","Bandaids – 1x3 Strips",2,"box","300 per box"],
+    ["2nd-skin","2nd Skin",1,"jar"],["band-aids-1-3-strips","Bandaids – 1x3 Strips",2,"box","100 per box"],
     ["band-aids-4-wing","Bandaids – 4 Wing",2,"box","50 per box"],["band-aids-knuckle","Bandaids – Knuckle",2,"box","100 per box"],
     ["eye-drops","Eye Drops",1,"bottle"],["hand-sanitizer","Hand Sanitizer",1,"bottle"],
     ["hydrocortisone-single-packets","Hydrocortisone Single Packets",1,"box","144 per box"],["hydrogen-peroxide","Hydrogen Peroxide",1,"bottle"],
@@ -259,10 +261,10 @@ const BOX_SECTIONS = [
     ["non-adherent-pads","Non Adherent Pads",1,"box"],["nose-plugs","Nose Plugs",4,"roll"],
     ["ns-new-sponges","NS New Sponges",1,"box"],["skin-lube","Skin Lube",1,"tube"],
     ["steri-strips","Steri Strips",5,"sleeve"],["sterile-4x4-gauze","Sterile 4x4 Gauze",1,"box"],
-    ["triple-antibiotic-single-packets","Triple Antibiotic Single Packets",1,"box"],["wound-wash-saline-spray","Wound Wash Saline Spray",1,"bottle","4 oz can"]]},
+    ["triple-antibiotic-single-packets","Triple Antibiotic Single Packets",1,"box"],["wound-wash-saline-spray","Wound Wash Saline Spray",1,"bottle","7.4 oz can"]]},
   {title:"Tapes", items:[
     ["cover-roll","Cover Roll",1,"roll"],["1-inch-elastikon-or-ac-plus","1-inch Elastikon",1,"box","12 rolls per box"],
-    ["inch-tape","¼-inch Tape",2,"box"],["2-inch-elastikon-or-ac-plus","2-inch Elastikon",1,"box","6 rolls per box"]]},
+    ["inch-tape","½-inch White Tape",2,"box"],["2-inch-elastikon-or-ac-plus","2-inch Elastikon",1,"box","6 rolls per box"]]},
   {title:"Splints & bracing", items:[
     ["36-sam-splint","36\" SAM Splint",3,""],["4-inch-single","4-inch Single",6,"wrap"],
     ["6-inch-double","6-inch Double",4,"wrap"],["6-inch-single","6-inch Single",6,"wrap"],
@@ -272,15 +274,65 @@ const BOX_SECTIONS = [
     ["gloves-large","Gloves – Large",1,"box"],["gloves-medium","Gloves – Medium",1,"box"],
     ["ibuprofen-single-dose-packs","Ibuprofen – Single Dose Packs",1,"box","250 packs per box"],["scissors","Scissors",1,""],
     ["shark","Shark",1,""],["stop-pain-single-dose-packs","Stop Pain – Single Dose Packs",1,"box"],
-    ["tampons","Tampons",1,"box"],["tums-single-dose-packs","Tums – Single Dose Packs",1,"box","250 packs per box"]]}
+    ["tampons","Tampons",1,"box"],["tums-single-dose-packs","Tums – Single Dose Packs",1,"box","75 two-packs per box"]]}
 ];
 const COURT_SECTION = {title:"Tournament supplies", court:true, items:[
-  ["1-white-tape","1½\" White Tape",{rate:2},"box"],
-  ["ecoflex-2","EcoFlex 2\"",{rate:1.5},"box"],
-  ["flexi-wrap","Flexi-wrap",{rate:0},"roll"],
-  ["ice-bags","Ice Bags",{ice:true,rate:1,days:3},"roll"],
-  ["powerflex-1","Powerflex 1\"",{rate:1},"box"],
-  ["prewrap","Prewrap",{rate:0.5},"box"]]};
+  // tier = amount per AT location for the whole tournament: [Small, Medium, Large] by court count
+  ["1-white-tape","1½\" White Tape",{tier:[2,4,6]},"box"],
+  ["ecoflex-2","EcoFlex 2\"",{tier:[1,2,3]},"box"],
+  ["flexi-wrap","Flexi-wrap",{tier:[0,0,0]},"roll"],
+  ["ice-bags","Ice Bags",{ice:true,tier:[0.5,0.5,1]},"roll"],
+  ["powerflex-1","EcoFlex 1\"",{tier:[1,2,3]},"box"],
+  ["prewrap","Prewrap",{tier:[1,1,2]},"box"]]};
+
+/* Henry Schein catalog: item id -> [item code, description, inventory units per Henry Schein selling unit] */
+const HS={
+  "1-white-tape":["1348646","950 Porous Athletic Tape Cotton/Zinc Oxide 1.5\"x15yd White Non-Sterile 32/Bx"],
+  "ecoflex-2":["1345853","Eco-Flex Underwrap/Wound Dressing Tape Elastic 2\"x6yd Black 24Rl/Ca"],
+  "flexi-wrap":["1340297","Flex-I-Wrap Compression Wrap 6\""],
+  "ice-bags":["3240021","Ice Bag Roll 10x18\""],
+  "powerflex-1":["7350055","Eco-Flex Athletic Tape Cloth 1\"x6yd Black 48Rl/Ca"],
+  "prewrap":["3640173","Athletic Underwrap Foam 2.75\"x30yd Navy 48/Ca"],
+  "2nd-skin":["6452314","2nd Skin Blister Prevention Bandage Hydrogel 1x1\" Blue Non-Sterile 200/jr"],
+  "band-aids-1-3-strips":["1271254","American White Cross Adhesive Bandage Fabric 1x3\" Tan Sterile 100/Bx"],
+  "band-aids-4-wing":["1271255","American White Cross Adhesive Bandage Fabric 3x2.88\" Tan Sterile 50/Bx"],
+  "band-aids-knuckle":["1271246","American White Cross Adhesive Bandage 1.5x3\" Beige Sterile 100/Bx"],
+  "eye-drops":["1514399","Medi-First Eye/Skin Wash Solution 98.3% 4oz/Bt"],
+  "hand-sanitizer":["5900066","Purell Advanced Gel Sanitizer 12oz/Bt"],
+  "hydrocortisone-single-packets":["1489851","Hydrocortisone Cream 0.9gm 1/32oz Foil Packet 144/Pk"],
+  "hydrogen-peroxide":["1127012","Hydrogen Peroxide Antiseptic Topical Solution 3% 8oz/Bt"],
+  "isopropyl-alcohol":["1127067","Isopropyl Alcohol Solution 70% 16oz/Bt"],
+  "mastisol":["7285234","Mastisol Liquid Adhesive 48/Bx",48],
+  "non-adherent-pads":["8900899","Telfa Ouchless Gauze Pad 2x3\" Sterile Non-Adherent"],
+  "nose-plugs":["1025455","Cotton Roll 1.5 in Non Sterile 2000/Bx",2000],
+  "ns-new-sponges":["1018748","Henry Schein Premium Rayon/Polyester Non-Woven Sponge 3x3\" 4Pl NS"],
+  "skin-lube":["1347698","Skin-Lube Ointment 2-3/4oz 1/Tb"],
+  "steri-strips":["9004315","Wound Closure Strip 1/4x3\" Opaque 150/Bx",50],
+  "sterile-4x4-gauze":["1202473","Rayon/Polyester Blend Top Sponge 4x4\" Sterile"],
+  "triple-antibiotic-single-packets":["5703128","Triple Antibiotic Topical Ointment 0.9gm Foil Packet 144/Bx"],
+  "wound-wash-saline-spray":["1315823","Simply Saline Wound Wash Topical Spray 7.4oz/Cn"],
+  "cover-roll":["9110006","Cover-Roll Stretch Bandage Elastic 6\"x10yd White Ea"],
+  "1-inch-elastikon-or-ac-plus":["1417049","ELASTIKON by Actimove Athletic Tape Cotton/Elastic 1\"x2.5yd Tan 12/Bx"],
+  "inch-tape":["1344087","950 Porous Trainers Tape Cotton/Zinc Oxide .5\"x10yd White Non-Sterile 24/Ca"],
+  "2-inch-elastikon-or-ac-plus":["1405639","ELASTIKON by Actimove Elastic Tape Cotton 2\"x2.5yd Beige 24/Ca",4],
+  "36-sam-splint":["3601359","SAM Emergency Splint Limb Aluminum/Foam 4.25x36\""],
+  "4-inch-single":["9004683","Stretch Bandage Elastic 4\"x4.5yd Tan Non-Sterile 10/Bx",10],
+  "6-inch-double":["3200045","Supra-Grip Elastic Support Bandage 6\"x11yd Tan NS 10/Bx",10],
+  "6-inch-single":["9004684","Stretch Bandage Elastic 6\"x4.5yd Tan Non-Sterile 10/Bx",10],
+  "finger-sam-splint":["7000644","SAM Emergency Splint Finger Aluminum/Foam"],
+  "horseshoe":["3730009","Horseshoe Therapy Support Ankle 12/Pk"],
+  "slings":["3758444","Procare Envelope Sling Arm One Size Cotton/Polyester 7x18\""],
+  "acetaminophen-single-dose-packs":["9004689","Henry Schein Pain Reliever Tablets 325mg Pouch 250x2/Bx"],
+  "clorox-wipes":["1399110","Super Sani-Cloth Germicidal Wipes Soft Pack 80/Pk"],
+  "gloves-large":["1372696","Carbon Air Nitrile Exam Gloves Large Black Non-Sterile 300/Bx"],
+  "gloves-medium":["5703484","Criterion N300 Nitrile Exam Gloves Medium Black Non-Sterile 300/Bx"],
+  "ibuprofen-single-dose-packs":["5700177","Ibuprofen NSAID Tablets 200mg Pouch 250x2/Bx"],
+  "scissors":["1205649","Super Pro Non-Stick Scissors 9.2x3.5x0.4\" Stainless Steel/Teflon Ea"],
+  "shark":["1345242","Shark Tape Cutter 8-1/4\" Valox Resin/Fiberglass Ea"],
+  "stop-pain-single-dose-packs":["1432175","Stopain Clinical Gel 100/Bx"],
+  "tampons":["1235145","Tampax Sanitary Tampon Regular 10/Bx"],
+  "tums-single-dose-packs":["3500009","Medique Ban-acid Antacid Tablets 750mg Berry 75x2/Bx"]
+};
 
 const mk=(sec,si)=>sec.items.map(([id,name,base,unit,note])=>({id,name,base,unit,note:note||"",sec:si,court:!!sec.court,ice:!!(base&&base.ice)}));
 const STD_BOX_ITEMS=BOX_SECTIONS.flatMap(mk);
@@ -341,7 +393,18 @@ const boxColor=id=>{const bx=allBoxes().find(b=>b.id===id);const i=bx?boxes(bx.o
 const dot=id=>`<span class="bdot" style="background:${boxColor(id)}"></span>`;
 const boxName=id=>(allBoxes().find(b=>b.id===id)||{}).name||"Box";
 const target=it=>has(L.cfg.targets[it.id])?num(L.cfg.targets[it.id]):it.base;
-const rate=it=>Object.assign({},it.base,L.cfg.rates[it.id]||{});
+/* tournament supplies: court-size tiers (saved inside cfg.rates so old per-day rates no longer apply) */
+const TIER_NAMES=["Small","Medium","Large"];
+const rates=()=>(L.cfg.rates&&typeof L.cfg.rates==="object"&&!Array.isArray(L.cfg.rates))?L.cfg.rates:(L.cfg.rates={});
+const tierCuts=()=>{const c=(rates()._tiers||{}).upTo||[];return [has(c[0])?num(c[0]):6,has(c[1])?num(c[1]):12];};
+const tierAmts=it=>{const o=(rates()[it.id]||{}).tier;return [0,1,2].map(i=>o&&has(o[i])?num(o[i]):it.base.tier[i]);};
+const tierOf=c=>{const [a,b]=tierCuts();return c<=a?0:c<=b?1:2;};
+function tierLabel(i){const [a,b]=tierCuts();return i===0?`Small (up to ${a} courts)`:i===1?`Medium (${a+1}–${b} courts)`:`Large (${b+1}+ courts)`;}
+/* court count per AT location, null when not entered */
+const locCourts=t=>{const n=Math.max(0,Math.floor(num(t.locs)));const a=String(t.courts??"").split(",");
+  return Array.from({length:n},(_,i)=>{const v=(a[i]||"").trim();return v===""?null:num(v);});};
+function courtsText(t){const c=locCourts(t);if(!c.length)return "0 AT locations";
+  return `${c.length} AT location${c.length>1?"s":""}`+(c.some(x=>x!==null)?` (${c.map(x=>x??"?").join(", ")} courts)`:", courts not set");}
 
 /* ---------- tournaments & sessions ---------- */
 const tours=()=>L.cfg.tournaments||[];
@@ -416,10 +479,10 @@ function boxState(bid,id,beforeTid,org){
 const shortfall=(bid,it)=>{const s=boxState(bid,it.id);return s?Math.max(0,target(it)-s.v):0;};
 const shortfallIn=(bid,it,org)=>{const s=boxState(bid,it.id,null,org);return s?Math.max(0,target(it)-s.v):0;};
 const uncounted=bid=>boxItemsAll().filter(it=>!boxState(bid,it.id)).length;
+/* each AT location gets its tier amount for the whole tournament; locations without a court count use Medium */
 function courtNeed(t,it){
-  const r=rate(it);
-  if(it.ice) return num(r.days)>0?Math.ceil(num(r.rate)*num(t.days)/num(r.days)-1e-9):0;
-  return Math.ceil(num(r.rate)*num(t.days)*num(t.locs)-1e-9);
+  const A=tierAmts(it);
+  return Math.ceil(locCourts(t).reduce((s,c)=>s+A[c===null?1:tierOf(c)],0)-1e-9);
 }
 /* plan: each box counted once (first upcoming tournament it's assigned to) */
 function plan(list){
@@ -703,7 +766,7 @@ function renderBox(id){
   const loc=sessLoc(tid,id);
   main().innerHTML=`<div class="card boxcard" style="--bc:${boxColor(id)}">
       <label class="field tsel">${curOrg()} tournament<select id="tsel">${tourOptions(tid,true,curOrg())}</select></label>
-      ${t?`<p class="sub" style="margin-top:6px">${[t.date?fmtDate(t.date):"Date not set",`${num(t.locs)} AT locations`,`${num(t.days)} days`].join(", ")}</p>`:""}
+      ${t?`<p class="sub" style="margin-top:6px">${[t.date?fmtDate(t.date):"Date not set",courtsText(t),`${num(t.days)} days`].join(", ")}</p>`:""}
       <div class="boxtitle" style="margin-top:14px">${dot(id)}<h2>${esc(boxName(id))}</h2></div>
       <div class="seg" role="group" aria-label="Count type">
         <button data-p="pre" aria-pressed="${ph==="pre"}">Pre-tournament</button>
@@ -807,7 +870,7 @@ function renderRestock(){
   if(!UP.length)h+=`<div class="card"><p class="empty">No upcoming ${curOrg()} tournaments. Set dates for your tournaments in Setup and assign boxes.</p></div>`;
   P.perTour.forEach(({t,boxes:bx,dup})=>{
     h+=`<div class="card accent"><h3>${esc(t.name||"Untitled tournament")}</h3>
-      <p class="sub">${[t.org,fmtDate(t.date),`${num(t.locs)} AT locations`,`${num(t.days)} days`].filter(Boolean).join(", ")}</p>`;
+      <p class="sub">${[t.org,fmtDate(t.date),courtsText(t),`${num(t.days)} days`].filter(Boolean).join(", ")}</p>`;
     if(!bx.length&&!dup.length)h+=`<p class="warn">No boxes assigned.</p>`;
     bx.forEach(b=>{const u=uncounted(b);
       h+=`<p class="bhead">${dot(b)}${esc(boxName(b))}</p><p class="hint" style="margin:2px 0 0">${lastCountNote(b)}</p>`+shortList(b)+(u?`<p class="warn">${u} item${u>1?"s":""} never counted</p>`:"");});
@@ -815,7 +878,9 @@ function renderRestock(){
     const cn=COURT_ITEMS.map(it=>[it,courtNeed(t,it)]).filter(([,n])=>n>0);
     h+=`<p class="bhead">Tournament supplies</p>`+
       (cn.length?`<ul class="mini">${cn.map(([it,n])=>`<li><span>${esc(it.name)}</span><b>${esc(qty(it,n))}</b></li>`).join("")}</ul>`
-        :`<p class="empty">Add AT locations and days in Setup.</p>`);
+        :`<p class="empty">Add AT locations and court counts in Setup.</p>`);
+    const unset=locCourts(t).filter(c=>c===null).length;
+    if(unset)h+=`<p class="warn">Court count not set for ${unset} location${unset>1?"s":""}, so ${unset>1?"they use":"it uses"} Medium amounts. Set courts in Setup.</p>`;
     if(L.cfg.comments["ice-bags"])h+=`<p class="hint">Ice bags: ${esc(L.cfg.comments["ice-bags"])}</p>`;
     h+=`</div>`;
   });
@@ -824,10 +889,22 @@ function renderRestock(){
   if(UP.length){
     h+=`<div class="card"><h3>Order list</h3><p class="sub">Total needed${list.length===1?` for ${esc(list[0].name||"this tournament")}`:` for all upcoming ${curOrg()} tournaments`}, minus ${curOrg()} excess on hand.</p>`+
       (O.length?`<div class="tw"><table class="t"><thead><tr><th>Item</th><th class="n">Need</th><th class="n">Excess</th><th class="n">Order</th></tr></thead><tbody>${
-        O.map(r=>`<tr><td>${esc(r.it.name)}${unitPlural(r.it)?`<span class="note">${esc(unitPlural(r.it))}</span>`:""}</td><td class="n">${fmt(r.need)}</td><td class="n">${r.ex===null?"–":r.ex}</td><td class="n ${r.order?"hot":""}">${fmt(r.order)}</td></tr>`).join("")}</tbody></table></div>`
+        O.map(r=>`<tr><td>${esc(r.it.name)}<span class="note">${esc([HS[r.it.id]?"#"+HS[r.it.id][0]:"",unitPlural(r.it)].filter(Boolean).join(" · "))}</span></td><td class="n">${fmt(r.need)}</td><td class="n">${r.ex===null?"–":r.ex}</td><td class="n ${r.order?"hot":""}">${fmt(r.order)}</td></tr>`).join("")}</tbody></table></div>`
         :`<p class="empty">Nothing needed yet.</p>`)+
       (exTodo?`<p class="warn">${exTodo} needed item${exTodo>1?"s":""} not counted in excess yet</p>`:"")+
       `<div class="row-between" style="margin-top:12px"><button class="btn ghost sm" id="copy">Copy order list</button></div></div>`;
+  }
+  const NG=nextGroup();
+  if(NG.length){
+    const R=hsRows(NG),ok=R.filter(r=>r.code),miss=R.filter(r=>!r.code);
+    h+=`<div class="card accent"><h3>Henry Schein order</h3><p class="sub">For the next tournament${NG.length>1?"s":""}: ${esc(NG.map(orgLabel).join(" and "))}. Quantities are what’s needed minus ${curOrg()} excess on hand, rounded up to Henry Schein selling units.</p>`+
+      (ok.length?`<div class="tw"><table class="t"><thead><tr><th>Item #</th><th>Item</th><th class="n">Qty</th></tr></thead><tbody>${
+        ok.map(r=>`<tr><td>${esc(r.code)}</td><td>${esc(r.it.name)}<span class="note">${esc(r.desc)}</span></td><td class="n hot">${r.qty}</td></tr>`).join("")}</tbody></table></div>`
+        :`<p class="empty">Nothing to order from Henry Schein.</p>`)+
+      (miss.length?`<p class="warn">No Henry Schein item number for: ${esc(miss.map(r=>`${r.it.name} (${qty(r.it,r.order)})`).join(", "))}</p>`:"")+
+      (R.some(r=>r.ex===null)?`<p class="warn">Count ${curOrg()} excess first so quantities don’t include what you already have.</p>`:"")+
+      `<div class="row-between" style="margin-top:12px;justify-content:flex-start"><button class="btn primary sm" id="hs-csv" ${ok.length?"":"disabled"}>Download order file (CSV)</button><button class="btn ghost sm" id="hs-copy" ${ok.length?"":"disabled"}>Copy item numbers</button></div>
+      <p class="hint">Upload the file in Henry Schein’s Quick Order / order upload. Columns are Item Code, Quantity, Description.</p></div>`;
   }
   const others=boxes().filter(b=>!plan(upcoming()).boxes.includes(b.id));
   if(others.length){
@@ -838,14 +915,26 @@ function renderRestock(){
   main().innerHTML=h;
   if($("#plan"))$("#plan").onchange=e=>{L.plan=e.target.value;persist();renderRestock();};
   if($("#copy"))$("#copy").onclick=()=>copyText(orderText());
+  if($("#hs-csv"))$("#hs-csv").onclick=()=>{try{const G=nextGroup();saveFile(`henry-schein-order-${slug(groupNames(G))}-${stamp()}.csv`,hsCSV(G),"text/csv;charset=utf-8");}catch(e){toast("Couldn’t build the order file");}};
+  if($("#hs-copy"))$("#hs-copy").onclick=()=>copyText(hsRows(nextGroup()).filter(r=>r.code).map(r=>`${r.code}\t${r.qty}`).join("\n"));
 }
+/* Henry Schein order lines: inventory units converted to Henry Schein selling units */
+function hsRows(list){
+  return orderRows(list).filter(r=>r.order>0).map(r=>{const h=HS[r.it.id];if(!h)return Object.assign({code:null},r);
+    const per=h[2]||1;return Object.assign({code:h[0],desc:h[1],qty:Math.ceil(r.order/per-1e-9)},r);});
+}
+function hsCSV(list){
+  const o=[["Item Code","Quantity","Description"],...hsRows(list).filter(r=>r.code).map(r=>[r.code,r.qty,r.desc])];
+  return o.map(r=>r.map(csvCell).join(",")).join("\r\n");
+}
+const slug=n=>String(n||"").replace(/[^a-z0-9]+/gi,"-").replace(/^-|-$/g,"").toLowerCase()||"order";
 function orderText(){
   const list=planList();const lines=[`${curOrg()} order list`];
   plan(list).perTour.forEach(({t,boxes:bx})=>lines.push(`${orgLabel(t)}: ${bx.map(boxName).join(", ")||"no boxes"}`));
   lines.push("");
   const O=orderRows(list).filter(r=>r.order>0);
   if(!O.length)lines.push("Nothing to order.");
-  O.forEach(r=>lines.push(`${r.it.name}: ${qty(r.it,r.order)}`));
+  O.forEach(r=>lines.push(`${r.it.name}${HS[r.it.id]?` (#${HS[r.it.id][0]})`:""}: ${qty(r.it,r.order)}`));
   return lines.join("\n");
 }
 async function copyText(t){
@@ -867,6 +956,8 @@ function tourCard(t){
       <label class="field">Days<input data-k="days" type="number" inputmode="numeric" min="0" value="${esc(t.days)}" placeholder="0"></label>
     </div>
     ${t.name==="World Challenge"?`<p class="hint">Possibly 4 AT locations.</p>`:""}
+    ${locCourts(t).length?`<p class="hint" style="margin-top:12px">Courts at each AT location</p><div class="grid3" style="margin-top:4px">${locCourts(t).map((c,i)=>
+      `<label class="field">Location ${i+1}<input data-court="${i}" type="number" inputmode="numeric" min="0" value="${c??""}" placeholder="Courts"></label>`).join("")}</div>`:""}
     <p class="hint" style="margin-top:12px">Boxes going to this tournament</p>
     <div class="boxpick">${boxes().map(b=>{const mine=(t.boxes||[]).includes(b.id);
       return `<label${mine?` class="on" style="--bc:${boxColor(b.id)}"`:""}><input type="checkbox" data-box="${b.id}" ${mine?"checked":""}>${dot(b.id)}${esc(b.name)}</label>`;}).join("")||`<span class="empty">Add a box first.</span>`}</div>
@@ -919,10 +1010,15 @@ function renderSetup(){
       ${boxes().map(b=>`<div class="row-between" style="margin-top:10px;flex-wrap:nowrap;gap:8px" data-b="${b.id}">${dot(b.id)}
         <input class="bname" value="${esc(b.name)}" ${inputStyle}>
         <button class="link danger" data-del-b>Remove</button></div>`).join("")}</div>`;
-    h+=`<div class="card"><h3>Tournament supplies</h3><p class="sub">Pulled from excess inventory for each tournament, based on its AT locations and days.</p>
-      ${COURT_ITEMS.map(it=>{const r=rate(it);return `<div class="rate" data-r="${it.id}"><span class="name">${esc(it.name)}</span><div class="rl">${it.ice
-        ?`<input data-rk="rate" type="number" inputmode="decimal" step="any" min="0" value="${esc(r.rate)}"> ${esc(unitPlural(it))} per <input data-rk="days" type="number" inputmode="decimal" step="any" min="0" value="${esc(r.days)}"> tournament days`
-        :`<input data-rk="rate" type="number" inputmode="decimal" step="any" min="0" value="${esc(r.rate)}"> ${esc(unitPlural(it))} per day per AT location`}</div></div>`;}).join("")}</div>`;
+    const cuts=tierCuts();
+    h+=`<div class="card"><h3>Tournament supplies</h3><p class="sub">Each AT location gets a set amount for the whole tournament, based on how many courts it covers. Enter the courts for each location on the tournament above. A location with no court count uses Medium.</p>
+      <div class="grid2" style="margin-top:10px"><label class="field">Small: up to (courts)<input data-cut="0" type="number" inputmode="numeric" min="0" value="${cuts[0]}"></label>
+        <label class="field">Medium: up to (courts)<input data-cut="1" type="number" inputmode="numeric" min="0" value="${cuts[1]}"></label></div>
+      <p class="hint" id="tier-hint">${esc(TIER_NAMES.map((n,i)=>tierLabel(i)).join(" · "))}</p>
+      <div class="tw" style="margin-top:8px"><table class="t"><thead><tr><th>Per AT location</th>${TIER_NAMES.map(n=>`<th class="n">${n}</th>`).join("")}</tr></thead><tbody>
+      ${COURT_ITEMS.map(it=>`<tr data-r="${it.id}"><td>${esc(it.name)}<span class="note">${esc(unitPlural(it))}</span></td>${tierAmts(it).map((v,i)=>
+        `<td class="n"><input data-tier="${i}" type="number" inputmode="decimal" step="any" min="0" value="${v}" aria-label="${esc(it.name)}, ${TIER_NAMES[i]}"></td>`).join("")}</tr>`).join("")}
+      </tbody></table></div><p class="hint">Totals are rounded up for each tournament.</p></div>`;
     h+=`<div class="card"><h3>Full box contents</h3><p class="sub">How many of each item a fully stocked box has.</p>
       ${BOX_SECTIONS.map((sec,si)=>`<p style="margin:14px 0 2px;font-weight:600">${esc(sec.title)}</p>${STD_BOX_ITEMS.filter(i=>i.sec===si).map(it=>
         `<div class="lvl"><span>${esc(it.name)}</span><span class="lvl-in"><input data-lvl="${it.id}" type="number" inputmode="decimal" step="any" min="0" value="${target(it)}"><small>${esc(unitWord(it,target(it)))}</small></span></div>`).join("")}`).join("")}</div>`;
@@ -957,8 +1053,11 @@ function renderSetup(){
     const tid=card.dataset.t, T=()=>tourById(tid);
     card.querySelectorAll("[data-k]").forEach(inp=>{
       inp.oninput=()=>{const t=T();if(!t)return;t[inp.dataset.k]=inp.value;saveCfg("tournaments");renderTabs();};
+      if(inp.dataset.k==="locs")inp.onchange=()=>{saveCfg("tournaments");renderSetup();};
       if(inp.dataset.k==="date"||inp.dataset.k==="name")inp.onchange=()=>{const t=T();if(t&&inp.dataset.k==="name")L.openEv=sorg+"|"+t.name;saveCfg("tournaments");persist();renderSetup();};
     });
+    card.querySelectorAll("[data-court]").forEach(inp=>inp.oninput=()=>{
+      const t=T();if(!t)return;const a=locCourts(t).map(c=>c??"");a[+inp.dataset.court]=inp.value.trim();t.courts=a.join(",");saveCfg("tournaments");});
     card.querySelectorAll("[data-box]").forEach(cb=>cb.onchange=()=>{
       const t=T();if(!t)return;const b=cb.dataset.box;
       t.boxes=(t.boxes||[]).filter(x=>x!==b);if(cb.checked)t.boxes.push(b);
@@ -988,8 +1087,12 @@ function renderSetup(){
       saveCfg("boxes",0);saveCfg("tournaments",0);render();
     };
   });
-  main().querySelectorAll("[data-r]").forEach(row=>row.querySelectorAll("[data-rk]").forEach(inp=>inp.oninput=()=>{
-    const id=row.dataset.r;L.cfg.rates[id]=Object.assign({},L.cfg.rates[id]||{},{[inp.dataset.rk]:inp.value});saveCfg("rates");}));
+  main().querySelectorAll("[data-r]").forEach(row=>row.querySelectorAll("[data-tier]").forEach(inp=>inp.oninput=()=>{
+    const id=row.dataset.r;const A=tierAmts(itm(id));A[+inp.dataset.tier]=inp.value===""?0:Math.max(0,num(inp.value));
+    rates()[id]=Object.assign({},rates()[id]||{},{tier:A});saveCfg("rates");}));
+  main().querySelectorAll("[data-cut]").forEach(inp=>inp.oninput=()=>{
+    const c=tierCuts();c[+inp.dataset.cut]=Math.max(0,num(inp.value));rates()._tiers={upTo:c};saveCfg("rates");
+    $("#tier-hint").textContent=TIER_NAMES.map((n,i)=>tierLabel(i)).join(" · ");});
   main().querySelectorAll("[data-lvl]").forEach(inp=>inp.oninput=()=>{
     L.cfg.targets[inp.dataset.lvl]=inp.value===""?null:num(inp.value);saveCfg("targets");
     const it=itm(inp.dataset.lvl);inp.nextElementSibling.textContent=unitWord(it,target(it));});
@@ -1017,10 +1120,10 @@ function buildCSV(){
     boxes(org).forEach(b=>{if(!sessionHasCounts(tid,b.id))return;
       boxRows(tid,b.id).forEach(r=>o.push([org,t?t.name:sessName(tid),t?t.date:"",b.name,secTitle(r.it),r.it.name,unitPlural(r.it),r.full,r.pre??"",r.post??"",r.used,r.restock]));});}));
   o.push([],["Tournaments"],["Organization","Tournament","Start date","AT locations","Days","Boxes"]);
-  sortedTours().forEach(t=>o.push([tourOrg(t),t.name,t.date,num(t.locs),num(t.days),(t.boxes||[]).map(boxName).join("; ")]));
+  sortedTours().forEach(t=>o.push([tourOrg(t),t.name,t.date,courtsText(t),num(t.days),(t.boxes||[]).map(boxName).join("; ")]));
   ORGS.forEach(org=>{const UP=upcoming(org);
-    o.push([],[`${org} order list (all upcoming ${org} tournaments)`],["Item","Unit","Needed","In excess","To order"]);
-    orderRows(UP).forEach(r=>o.push([r.it.name,unitPlural(r.it),fmt(r.need),r.ex===null?"":r.ex,fmt(r.order)]));
+    o.push([],[`${org} order list (all upcoming ${org} tournaments)`],["Item","Henry Schein #","Unit","Needed","In excess","To order"]);
+    orderRows(UP).forEach(r=>o.push([r.it.name,HS[r.it.id]?HS[r.it.id][0]:"",unitPlural(r.it),fmt(r.need),r.ex===null?"":r.ex,fmt(r.order)]));
   });
   ORGS.forEach(org=>{const G=nextGroup(org);const N=needs(G);const xl=excessLoc(org);
     o.push([],[`${org} excess inventory`,G.length?`Needed = ${G.map(tourLabel).join(" and ")}`:""],["Section","Item","Unit","On hand","Needed for next tournament","Short","Notes"]);
@@ -1039,7 +1142,7 @@ function buildPDF(){
   doc.setFont("helvetica","bold");doc.setFontSize(18);doc.text("Medical Supply Inventory",Lm,y);y+=20;
   doc.setFontSize(13);doc.text(pt(tid?(t?orgLabel(t):sessName(tid)):"No tournament selected"),Lm,y);y+=16;
   doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(100);
-  if(t){doc.text(pt([fmtDate(t.date),`${num(t.locs)} AT locations`,`${num(t.days)} days`].filter(Boolean).join(", ")),Lm,y);y+=14;}
+  if(t){doc.text(pt([fmtDate(t.date),courtsText(t),`${num(t.days)} days`].filter(Boolean).join(", ")),Lm,y);y+=14;}
   doc.text(pt(`Exported ${new Date().toLocaleString()}${L.name?` by ${L.name}`:""}`),Lm,y);y+=26;
   const center={halign:"center"};
   if(tid){
@@ -1050,7 +1153,7 @@ function buildPDF(){
   }
   H(`${curOrg()} order list (all upcoming ${curOrg()} tournaments)`);
   const O=orderRows(upcoming());
-  if(O.length)tbl(["Item","Needed","In excess","To order"],O.map(r=>[r.it.name,qty(r.it,r.need),r.ex===null?"-":r.ex,qty(r.it,r.order)]),
+  if(O.length)tbl(["Item","Needed","In excess","To order"],O.map(r=>[r.it.name+(HS[r.it.id]?` (#${HS[r.it.id][0]})`:""),qty(r.it,r.need),r.ex===null?"-":r.ex,qty(r.it,r.order)]),
     {columnStyles:{2:center,3:{fontStyle:"bold",textColor:[192,57,30]}}});
   else{y+=6;doc.setFont("helvetica","normal");doc.setFontSize(10);doc.text("Nothing needed.",Lm,y);y+=22;}
   const NG=nextGroup();const N=needs(NG);
