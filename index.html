@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1E4F9C">
+<title>Medical Supply Inventory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{
+  --bg:#EEF1F3; --surface:#FFFFFF; --ink:#18222C; --muted:#5D6B78; --line:#D7DDE2;
+  --court:#1E4F9C; --court-ink:#FFFFFF; --court-soft:#E3EBF7;
+  --pink:#F0DCF2; --pink-ink:#5B2A63;
+  --flag:#C0391E; --flag-bg:#FBE7E2;
+  --ok:#2C7A4B; --ok-bg:#E3F2E8;
+  --todo:#9AA6B1;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#10161C; --surface:#18212A; --ink:#E8EDF1; --muted:#9BA9B6; --line:#2B3742;
+    --court:#4C82D6; --court-ink:#0C1218; --court-soft:#1C2A3D;
+    --pink:#3E2843; --pink-ink:#F0CDF5;
+    --flag:#FF7A5C; --flag-bg:#3A1F19;
+    --ok:#6CCB92; --ok-bg:#183024;
+    --todo:#5F6D79;
+    color-scheme:dark;
+  }
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 150px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.4 Barlow,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--court)}
+button,input,select{font:inherit;color:inherit}
+[hidden]{display:none!important}
+
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--court);color:var(--court-ink)}
+.hrow{display:flex;align-items:baseline;justify-content:space-between;gap:12px;max-width:760px;margin:0 auto;padding:12px 16px 8px}
+h1{margin:0;font:700 24px/1 "Barlow Condensed","Arial Narrow",sans-serif;letter-spacing:.2px}
+.sync{font-size:13px;font-weight:500;opacity:.9;text-align:right;white-space:nowrap}
+.sync.bad{color:#FFD2C6;opacity:1}
+.tabs{max-width:760px;margin:0 auto;display:flex;gap:4px;overflow-x:auto;padding:0 12px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:0 0 auto;border:0;background:transparent;color:inherit;opacity:.78;padding:10px 12px 11px;font:600 16px "Barlow Condensed","Arial Narrow",sans-serif;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+.tabs button[aria-selected="true"]{opacity:1;border-bottom-color:var(--court-ink)}
+.tabs .sep{flex:0 0 1px;background:rgba(255,255,255,.35);margin:10px 4px}
+
+main{max-width:760px;margin:0 auto;padding:14px 12px 120px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+.card.accent{border:1.5px solid var(--court)}
+h2{font:700 22px/1.1 "Barlow Condensed","Arial Narrow",sans-serif;margin:0 0 4px}
+h3{font:700 18px/1.15 "Barlow Condensed","Arial Narrow",sans-serif;margin:0 0 8px}
+.sub{color:var(--muted);font-size:14px;margin:0}
+.hint{font-size:13px;color:var(--muted);margin:8px 0 0}
+.row-between{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+
+.seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:3px;margin-top:12px}
+.seg button{flex:1;border:0;background:transparent;border-radius:8px;padding:9px 6px;font-weight:600;cursor:pointer;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--court);color:var(--court-ink)}
+.chips{display:flex;gap:6px;margin-top:10px}
+.chips button{flex:1;border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 8px;font-weight:600;font-size:14px;cursor:pointer}
+.chips button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.meter{height:6px;border-radius:3px;background:var(--bg);overflow:hidden;display:flex;margin-top:10px}
+.meter i{display:block;height:100%}
+.meter .m-ok{background:var(--ok)} .meter .m-flag{background:var(--flag)}
+
+section.grp{margin-bottom:18px}
+.grp-h{font:700 20px/1.1 "Barlow Condensed","Arial Narrow",sans-serif;margin:0 0 6px 4px;display:flex;justify-content:space-between;align-items:baseline}
+.grp-h small{font:500 13px Barlow,sans-serif;color:var(--flag)}
+.list{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.item{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;padding:10px 10px 10px 12px;border-top:1px solid var(--line);border-left:5px solid var(--todo)}
+.item:first-child{border-top:0}
+.item.ok{border-left-color:var(--ok)}
+.item.flag{border-left-color:var(--flag);background:var(--flag-bg)}
+.item.hide{display:none}
+.name{font-weight:600;line-height:1.2}
+.note{display:block;font-weight:400;font-size:13px;color:var(--muted)}
+.status{font-size:13px;font-weight:600;margin-top:3px;color:var(--muted)}
+.flag .status{color:var(--flag)} .ok .status{color:var(--ok)}
+.status:empty{display:none}
+.ctrl{display:flex;align-items:center;gap:6px}
+.target{min-width:44px;height:40px;border:0;border-radius:8px;background:var(--pink);color:var(--pink-ink);font:700 18px "Barlow Condensed",sans-serif;cursor:pointer;padding:0 8px}
+.target small{display:block;font:500 10px Barlow,sans-serif;margin-top:-2px}
+.step{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg)}
+.step button{width:38px;height:40px;border:0;background:transparent;font-size:22px;font-weight:500;cursor:pointer;color:var(--court)}
+.step input{width:50px;height:40px;border:0;text-align:center;font:700 19px "Barlow Condensed",sans-serif;background:var(--surface);-moz-appearance:textfield;appearance:textfield}
+.step input::-webkit-outer-spin-button,.step input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.step input::placeholder{color:var(--todo);font-weight:500}
+.item .extra{grid-column:1/-1;display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
+.item .extra input{flex:1;min-width:0;border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--bg);font-size:15px}
+
+.field{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:500}
+.field input,.field select{border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:var(--bg);font-size:16px;min-width:0;color:var(--ink)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.wide{grid-column:1/-1}
+.boxpick{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.boxpick label{display:flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:999px;padding:6px 12px 6px 8px;font-weight:600;font-size:14px;cursor:pointer}
+.boxpick input{width:18px;height:18px;accent-color:var(--court)}
+.boxpick small{font-weight:400;color:var(--muted)}
+.lvl{display:grid;grid-template-columns:1fr 70px;gap:6px 10px;align-items:center;padding:6px 0;border-top:1px solid var(--line);font-size:15px}
+.lvl:first-of-type{border-top:0}
+.lvl input{border:1px solid var(--line);border-radius:6px;padding:6px;background:var(--bg);text-align:center;font-size:15px;width:100%}
+.rate{padding:10px 0;border-top:1px solid var(--line)}
+.rate:first-of-type{border-top:0}
+.rate .rl{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:14px;color:var(--muted);margin-top:4px}
+.rate input{width:62px;border:1px solid var(--line);border-radius:6px;padding:5px;background:var(--bg);text-align:center;font-size:15px}
+
+table.t{width:100%;border-collapse:collapse;font-size:15px}
+.t th{text-align:left;font-weight:600;color:var(--muted);font-size:13px;padding:6px 6px;border-bottom:1px solid var(--line)}
+.t td{padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.t tr:last-child td{border-bottom:0}
+.t .n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.t .hot{color:var(--flag);font-weight:700}
+.tw{overflow-x:auto}
+.mini{margin:6px 0 0;padding:0;list-style:none;font-size:15px}
+.mini li{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px dashed var(--line)}
+.mini li:last-child{border-bottom:0}
+.mini b{color:var(--flag)}
+.warn{font-size:13px;color:var(--flag);font-weight:600;margin-top:6px}
+.empty{color:var(--muted);font-size:15px;margin:4px 0 0}
+
+.btn{border:0;border-radius:10px;padding:12px 14px;font-weight:600;font-size:16px;cursor:pointer}
+.btn.primary{background:var(--court);color:var(--court-ink)}
+.btn.danger{background:var(--flag);color:#fff}
+.btn.ghost{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+.btn.sm{padding:8px 12px;font-size:14px}
+.link{background:none;border:0;padding:6px 0;color:var(--court);font-weight:600;cursor:pointer;font-size:14px}
+.link.danger{color:var(--flag)}
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px))}
+.bar-in{max-width:760px;margin:0 auto;display:flex;gap:8px}
+.bar-in .btn{flex:1}
+:focus-visible{outline:3px solid var(--court);outline-offset:2px}
+
+dialog{border:0;border-radius:14px;padding:0;width:min(520px,94vw);background:var(--surface);color:var(--ink)}
+dialog::backdrop{background:rgba(10,15,20,.55)}
+.dlg{padding:18px}
+.dlg h3{font-size:22px}
+.dlg p{margin:0 0 14px;color:var(--muted)}
+.dlg-actions{display:flex;gap:8px;margin-top:14px}
+.dlg-actions .btn{flex:1}
+.err{color:var(--flag);font-size:14px;font-weight:600;min-height:1.2em;margin:8px 0 0}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:999px;font-weight:600;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20;max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow"><h1>Medical Supply Inventory</h1><span class="sync" id="sync" role="status"></span></div>
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Inventory areas"></nav>
+</header>
+<main id="main"></main>
+<div class="bar"><div class="bar-in">
+  <button class="btn ghost" id="pdf">Export PDF</button>
+  <button class="btn ghost" id="csv">Export CSV</button>
+</div></div>
+
+<dialog id="confirm" aria-labelledby="c-h"><div class="dlg">
+  <h3 id="c-h"></h3><p id="c-p"></p>
+  <div class="dlg-actions"><button class="btn ghost" id="c-cancel">Cancel</button><button class="btn danger" id="c-ok"></button></div>
+</div></dialog>
+
+<dialog id="connect" aria-labelledby="k-h"><div class="dlg">
+  <h3 id="k-h">Medical Supply Inventory</h3>
+  <p>Enter your name and the team code you were given. Your counts are shared with the rest of the medical staff.</p>
+  <div class="grid2">
+    <label class="field wide">Your name<input id="k-name" autocomplete="name"></label>
+    <label class="field wide">Team code<input id="k-code" autocomplete="off" autocapitalize="off"></label>
+  </div>
+  <p class="err" id="k-err"></p>
+  <div class="dlg-actions"><button class="btn primary" id="k-go">Start counting</button></div>
+</div></dialog>
+<dialog id="xdlg" aria-labelledby="x-h"><div class="dlg">
+  <h3 id="x-h">Add extra supply</h3>
+  <div class="grid2">
+    <label class="field wide">Item<input id="x-name" placeholder="e.g., Blister pads"></label>
+    <label class="field wide">Pack size<input id="x-note" placeholder="Optional, e.g., box of 50"></label>
+  </div>
+  <label class="switch" style="display:flex;gap:8px;align-items:center;margin-top:12px;font-weight:600;font-size:15px"><input type="checkbox" id="x-in" style="width:20px;height:20px;accent-color:var(--court)"> Kept in every box</label>
+  <label class="field" id="x-lvl-wrap" style="margin-top:10px">Restock level per box<input id="x-level" type="number" inputmode="decimal" min="0" step="any" value="1"></label>
+  <p class="err" id="x-err"></p>
+  <div class="dlg-actions"><button class="btn ghost" id="x-cancel">Cancel</button><button class="btn primary" id="x-save">Add item</button></div>
+</div></dialog>
+<div class="toast" id="toast"></div>
+<script>
+/* ====== CONNECT TO YOUR GOOGLE SHEET ======
+   Paste the Web app URL from Apps Script between the quotes.
+   Leave it empty to run on this device only (handy for testing). */
+const API_URL = "";
+/* ========================================== */
+
+(function(){
+const LOCAL = !API_URL;
+const LS = "msi-v2";
+
+const BOX_SECTIONS = [
+  {title:"Wound care", items:[
+    ["2nd Skin","",1],["Band-Aids, 1×3 strips","300 per box",2],["Band-Aids, 4 wing","50 per box",2],
+    ["Band-Aids, knuckle","100 per box",2],["Eye drops","",1],["Gloves, large","",1],["Gloves, medium","",1],
+    ["Hand sanitizer","",1],["Hydrocortisone single packets","144 per",1],["Hydrogen peroxide","",1],
+    ["Isopropyl alcohol","",1],["Mastisol","",10],["Non-adherent pads","",1],["Nose plugs","",4],
+    ["NS New Sponges","",1],["Skin lube","",1],["Steri-Strips","",1],["Sterile 4x4 gauze","",1],
+    ["Triple antibiotic single packets","",1],["Wound wash saline spray","4 oz can",1]]},
+  {title:"Splints & bracing", items:[
+    ["36\" SAM splint","",3],["4-inch single","rolls",6],["6-inch double","rolls",4],["6-inch single","rolls",6],
+    ["Finger SAM splint","",12],["Foam","",1],["Horseshoe","pack of 12",3],["Slings","",2]]},
+  {title:"Tapes", items:[
+    ["1-inch Elastikon or AC Plus","12 rolls",1],["¼-inch tape","",1],["2-inch Elastikon or AC Plus","6 rolls",1],["Cover roll","",1]]},
+  {title:"Miscellaneous", items:[
+    ["Acetaminophen single-dose packs","250 packs",1],["Clorox wipes","",1],["Flexi-wrap","rolls",2],
+    ["Ibuprofen single-dose packs","250 packs",1],["Scissors","",1],["Shark","",1],
+    ["Stop Pain single-dose packs","",1],["Tampons","",1],["Tums single-dose packs","250 packs",1]]}
+];
+const COURT_SECTION = {title:"Court-based supplies", court:true, items:[
+  ["1½\" white tape","boxes",{rate:2,per:70}],
+  ["EcoFlex 2\"","boxes",{rate:1.5,per:70}],
+  ["Ice bags","rolls",{ice:true,rate:1,days:3}],
+  ["Powerflex 1\"","boxes",{rate:1,per:70}],
+  ["Prewrap","boxes",{rate:0.5,per:100}]]};
+
+const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+const mk=(sec,si)=>sec.items.map(([name,note,base])=>({id:slug(name),name,note,base,sec:si,court:!!sec.court,ice:!!(base&&base.ice)}));
+const STD_BOX_ITEMS=BOX_SECTIONS.flatMap(mk);
+const COURT_ITEMS=mk(COURT_SECTION,"c");
+const ITEM={};[...STD_BOX_ITEMS,...COURT_ITEMS].forEach(i=>ITEM[i.id]=i);
+const EXTRA_SECTION={title:"Extra supplies",extra:true};
+const EXCESS_SECTIONS=[COURT_SECTION,...BOX_SECTIONS,EXTRA_SECTION];
+const BOX_TAB_SECTIONS=[...BOX_SECTIONS,EXTRA_SECTION];
+
+const DEFAULT_CFG=()=>({extras:[],boxes:[{id:"b1",name:"Box 1"},{id:"b2",name:"Box 2"}],tournaments:[],targets:{},rates:{},comments:{}});
+
+/* ---------- state ---------- */
+let L={name:"",code:"",admin:"",cfg:DEFAULT_CFG(),counts:{},pending:{},tab:"",phase:{},filter:"all",lastSync:0};
+try{const r=localStorage.getItem(LS);if(r){const p=JSON.parse(r);L=Object.assign(L,p);L.cfg=Object.assign(DEFAULT_CFG(),p.cfg||{});}}catch(e){}
+const persist=()=>{try{localStorage.setItem(LS,JSON.stringify(L))}catch(e){}};
+const isAdmin=()=>LOCAL||!!L.admin;
+
+const num=v=>{const n=parseFloat(v);return isFinite(n)?n:0};
+const has=v=>v!==null&&v!==undefined&&v!=="";
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const K=(loc,item,phase)=>`${loc}|${item}|${phase}`;
+const get=(loc,item,phase)=>{const v=L.counts[K(loc,item,phase)];return has(v)?num(v):null;};
+const fmt=n=>Math.round(n*100)/100;
+function fmtDate(d){if(!d)return"";const[y,m,da]=d.split("-").map(Number);return new Date(y,m-1,da).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});}
+
+const boxes=()=>L.cfg.boxes||[];
+const extras=()=>(L.cfg.extras||[]).map(x=>({id:x.id,name:x.name||"Unnamed item",note:x.note||"",base:x.inBoxes?num(x.level):0,sec:"x",extra:true,inBoxes:!!x.inBoxes}));
+const boxItemsAll=()=>[...STD_BOX_ITEMS,...extras().filter(x=>x.inBoxes)];
+const excessItemsAll=()=>[...COURT_ITEMS,...STD_BOX_ITEMS,...extras()];
+const itm=id=>ITEM[id]||extras().find(x=>x.id===id);
+const secTitle=it=>it.court?COURT_SECTION.title:it.extra?EXTRA_SECTION.title:BOX_SECTIONS[it.sec].title;
+const tours=()=>L.cfg.tournaments||[];
+const boxName=id=>(boxes().find(b=>b.id===id)||{}).name||"Box";
+const tourForBox=id=>tours().find(t=>(t.boxes||[]).includes(id));
+const target=it=>has(L.cfg.targets[it.id])?num(L.cfg.targets[it.id]):it.base;
+const rate=it=>Object.assign({},it.base,L.cfg.rates[it.id]||{});
+function courtNeed(t,it){
+  const r=rate(it);
+  if(it.ice) return num(r.days)>0?Math.ceil(num(r.rate)*num(t.days)/num(r.days)-1e-9):0;
+  if(!num(r.per))return 0;
+  return Math.ceil(num(r.rate)*num(t.days)*num(t.locs)*num(t.courts)/num(r.per)-1e-9);
+}
+const latest=(box,id)=>{const p=get(box,id,"post");return p!==null?p:get(box,id,"pre");};
+const shortfall=(box,it)=>{const v=latest(box,it.id);return v===null?0:Math.max(0,target(it)-v);};
+const uncounted=box=>boxItemsAll().filter(it=>latest(box,it.id)===null).length;
+function needFor(t,it){
+  let n=0;
+  if(it.court) n+=courtNeed(t,it);
+  else if(!it.extra||it.inBoxes)(t.boxes||[]).forEach(b=>{if(boxes().some(x=>x.id===b)) n+=shortfall(b,it);});
+  return n;
+}
+const totalNeed=it=>tours().reduce((s,t)=>s+needFor(t,it),0);
+
+/* ---------- sync ---------- */
+let syncState=LOCAL?"local":"idle", flushing=false, flushTimer=null, lastFlushDone=0;
+function setSync(s){syncState=s;const el=document.getElementById("sync");
+  const map={local:"On this device",idle:L.lastSync?`Synced ${new Date(L.lastSync).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}`:"Connecting…",
+    saving:"Saving…",offline:"Offline, saved on this phone",error:"Not synced"};
+  el.textContent=map[s]||"";el.classList.toggle("bad",s==="offline"||s==="error");}
+async function api(body){
+  const res=await fetch(API_URL,{method:"POST",redirect:"follow",body:JSON.stringify(Object.assign({},body,{code:L.code,admin:L.admin,by:L.name}))});
+  return res.json();
+}
+function setCount(loc,item,phase,v){
+  const k=K(loc,item,phase);
+  if(has(v)) L.counts[k]=num(v); else delete L.counts[k];
+  L.pending[k]={loc,item,phase,value:has(v)?num(v):null,locName:loc==="excess"?"Excess":boxName(loc),itemName:(itm(item)||{name:item}).name};
+  persist();scheduleFlush();
+}
+function scheduleFlush(ms=1200){if(LOCAL){L.pending={};persist();return;}clearTimeout(flushTimer);flushTimer=setTimeout(flush,ms);}
+async function flush(){
+  if(LOCAL||flushing)return;
+  const batch=Object.entries(L.pending);if(!batch.length){setSync("idle");return;}
+  flushing=true;setSync("saving");
+  try{
+    const r=await api({action:"counts",changes:batch.map(([,v])=>v)});
+    if(!r.ok)throw r;
+    batch.forEach(([k,v])=>{if(L.pending[k]&&L.pending[k].value===v.value)delete L.pending[k];});
+    L.lastSync=Date.now();lastFlushDone=Date.now();persist();setSync("idle");
+  }catch(e){
+    if(e&&e.error==="bad_code"){lockOut();}
+    else{setSync("offline");clearTimeout(flushTimer);flushTimer=setTimeout(flush,15000);}
+  }finally{flushing=false;if(Object.keys(L.pending).length&&syncState==="idle")scheduleFlush(300);}
+}
+async function load(){
+  if(LOCAL){setSync("local");return true;}
+  const started=Date.now();
+  try{
+    const r=await api({action:"load"});
+    if(!r.ok){if(r.error==="bad_code"){lockOut();return false;}throw r;}
+    if(lastFlushDone>started||flushing){setTimeout(load,800);return true;}
+    const cfg=DEFAULT_CFG();Object.keys(r.config||{}).forEach(k=>cfg[k]=r.config[k]);
+    L.cfg=cfg;
+    const counts={};(r.counts||[]).forEach(([loc,item,phase,v])=>counts[K(loc,item,phase)]=v);
+    Object.entries(L.pending).forEach(([k,p])=>{if(has(p.value))counts[k]=p.value;else delete counts[k];});
+    L.counts=counts;
+    if(L.admin&&!r.admin){L.admin="";toast("Admin code no longer valid");}
+    L.lastSync=Date.now();persist();setSync(Object.keys(L.pending).length?"saving":"idle");
+    if(Object.keys(L.pending).length)scheduleFlush(200);
+    return true;
+  }catch(e){setSync("offline");return true;}
+}
+const cfgTimers={};
+function saveCfg(key,ms=700){
+  persist();if(LOCAL)return;
+  clearTimeout(cfgTimers[key]);
+  cfgTimers[key]=setTimeout(async()=>{
+    setSync("saving");
+    try{const r=await api({action:"config",key,value:L.cfg[key]});
+      if(!r.ok){if(r.error==="bad_admin"){L.admin="";persist();render();toast("Setup is locked. Enter the admin code again.");}else throw r;}
+      L.lastSync=Date.now();setSync("idle");
+    }catch(e){setSync("offline");toast("Setup change didn’t save. Check your connection.");}
+  },ms);
+}
+function lockOut(){L.code="";persist();showConnect("That team code didn’t work. Check it and try again.");}
+
+/* ---------- UI helpers ---------- */
+const $=s=>document.querySelector(s);
+const main=()=>document.getElementById("main");
+let tt;function toast(m){const el=$("#toast");el.textContent=m;el.classList.add("show");clearTimeout(tt);tt=setTimeout(()=>el.classList.remove("show"),2200);}
+function openDlg(d){d.showModal?d.showModal():d.setAttribute("open","");}
+function closeDlg(d){d.close?d.close():d.removeAttribute("open");}
+function confirmDlg(title,msg,ok){
+  return new Promise(res=>{const d=$("#confirm");$("#c-h").textContent=title;$("#c-p").textContent=msg;$("#c-ok").textContent=ok;
+    const done=v=>{closeDlg(d);$("#c-ok").onclick=$("#c-cancel").onclick=null;res(v);};
+    $("#c-ok").onclick=()=>done(true);$("#c-cancel").onclick=()=>done(false);openDlg(d);});
+}
+
+/* ---------- tabs ---------- */
+function validTab(){
+  const t=L.tab;
+  if(t.startsWith("box:")&&boxes().some(b=>"box:"+b.id===t))return t;
+  if(["excess","restock","setup"].includes(t))return t;
+  return boxes()[0]?"box:"+boxes()[0].id:"excess";
+}
+function renderTabs(){
+  L.tab=validTab();
+  const el=$("#tabs");
+  el.innerHTML=boxes().map(b=>`<button role="tab" data-tab="box:${b.id}" aria-selected="${L.tab==="box:"+b.id}">${esc(b.name)}</button>`).join("")+
+    `<button role="tab" data-tab="excess" aria-selected="${L.tab==="excess"}">Excess</button><span class="sep"></span>`+
+    `<button role="tab" data-tab="restock" aria-selected="${L.tab==="restock"}">Restock</button>`+
+    `<button role="tab" data-tab="setup" aria-selected="${L.tab==="setup"}">Setup</button>`;
+  el.querySelectorAll("button").forEach(b=>b.onclick=()=>{L.tab=b.dataset.tab;persist();render();window.scrollTo({top:0});});
+}
+function render(){
+  renderTabs();
+  const t=L.tab;
+  if(t.startsWith("box:"))renderBox(t.slice(4));
+  else if(t==="excess")renderExcess();
+  else if(t==="restock")renderRestock();
+  else renderSetup();
+}
+/* refresh after a background load without disturbing typing */
+function softRefresh(){
+  const a=document.activeElement;
+  const typing=a&&main().contains(a)&&(a.tagName==="INPUT"||a.tagName==="SELECT");
+  if(L.tab.startsWith("box:")||L.tab==="excess"){renderTabs();updateRows();}
+  else if(!typing)render();
+}
+
+/* ---------- count rows ---------- */
+function rowHTML(it,withTarget){
+  return `<div class="item" data-id="${it.id}">
+    <div><span class="name">${esc(it.name)}${it.note?`<span class="note">${esc(it.note)}</span>`:""}</span><div class="status"></div></div>
+    <div class="ctrl">
+      ${withTarget?`<button class="target" aria-label="Mark ${esc(it.name)} fully stocked"></button>`:""}
+      <div class="step">
+        <button data-d="-1" aria-label="One less ${esc(it.name)}">−</button>
+        <input type="number" inputmode="decimal" min="0" step="any" placeholder="–" aria-label="${esc(it.name)} count">
+        <button data-d="1" aria-label="One more ${esc(it.name)}">+</button>
+      </div>
+    </div>
+    ${it.ice?`<div class="extra">Notes<input type="text" data-comment placeholder="e.g., extra for outdoor courts"></div>`:""}
+  </div>`;
+}
+let rowCtx=null; // {loc, phase}
+function wireRows(loc,phaseFn){
+  rowCtx={loc,phaseFn};
+  main().querySelectorAll(".item").forEach(row=>{
+    const id=row.dataset.id, inp=row.querySelector(".step input");
+    const cur=()=>get(loc,id,phaseFn());
+    row.querySelectorAll(".step button").forEach(b=>b.onclick=()=>{
+      const c=cur();const d=num(b.dataset.d);
+      const n=c===null?(d>0?1:0):Math.max(0,c+d);
+      setCount(loc,id,phaseFn(),fmt(n));updateRows();
+    });
+    inp.oninput=()=>{setCount(loc,id,phaseFn(),inp.value===""?null:Math.max(0,num(inp.value)));updateRows(row);};
+    const tb=row.querySelector(".target");
+    if(tb)tb.onclick=()=>{setCount(loc,id,phaseFn(),target(itm(id)));updateRows();};
+    const cm=row.querySelector("[data-comment]");
+    if(cm){cm.value=L.cfg.comments[id]||"";cm.oninput=()=>{L.cfg.comments[id]=cm.value;saveCfg("comments",1200);};}
+  });
+}
+function updateRows(skipRow){
+  if(!rowCtx)return;
+  const {loc,phaseFn}=rowCtx;const phase=phaseFn();
+  let ok=0,fl=0,todo=0;const secFlags={};
+  main().querySelectorAll(".item").forEach(row=>{
+    const it=itm(row.dataset.id);if(!it)return;const inp=row.querySelector(".step input");
+    const c=get(loc,it.id,phase);
+    if(row!==skipRow&&document.activeElement!==inp)inp.value=c===null?"":c;
+    let k="todo",msg="";
+    if(loc==="excess"){
+      const need=totalNeed(it);
+      if(c===null){msg=need?`Upcoming tournaments need ${need}`:"";}
+      else if(c<need){k="flag";msg=`Short ${fmt(need-c)} (need ${need})`;}
+      else{k="ok";msg=need?`Covers ${need} needed`:"Counted";}
+    }else{
+      const t=target(it);
+      const tbn=row.querySelector(".target");if(tbn)tbn.innerHTML=`${t}<small>level</small>`;
+      const pre=get(loc,it.id,"pre");
+      const bits=[];
+      if(c!==null){ if(!t){k="ok";bits.push("Counted");} else if(c<t){k="flag";bits.push(`Restock ${fmt(t-c)}`);} else {k="ok";bits.push("Stocked");} }
+      if(phase==="post"&&pre!==null){bits.push(`started with ${pre}`);if(c!==null)bits.push(`used ${fmt(Math.max(0,pre-c))}`);}
+      msg=bits.join(", ");
+      if(msg)msg=msg[0].toUpperCase()+msg.slice(1);
+    }
+    row.classList.remove("ok","flag");if(k!=="todo")row.classList.add(k);
+    row.querySelector(".status").textContent=msg;
+    row.classList.toggle("hide",L.filter!=="all"&&k!==L.filter);
+    if(k==="ok")ok++;else if(k==="flag"){fl++;secFlags[row.closest("section").dataset.s]=(secFlags[row.closest("section").dataset.s]||0)+1;}else todo++;
+  });
+  main().querySelectorAll("section.grp").forEach(s=>{
+    const f=secFlags[s.dataset.s]||0;s.querySelector(".grp-h small").textContent=f?`${f} ${loc==="excess"?"short":"to restock"}`:"";
+    s.style.display=(s.classList.contains("extra-grp")&&L.filter==="all")||s.querySelectorAll(".item:not(.hide)").length?"":"none";
+  });
+  const total=Math.max(1,ok+fl+todo);
+  const tl=$("#tally");if(tl)tl.textContent=`${total-todo} of ${total} counted, ${fl} ${loc==="excess"?"short":"to restock"}`;
+  const m=$("#meter");if(m){m.children[0].style.width=(ok/total*100)+"%";m.children[1].style.width=(fl/total*100)+"%";}
+}
+function sectionsHTML(sections,withTarget){
+  return sections.map((sec,i)=>{
+    const list=sec.court?COURT_ITEMS:sec.extra?(withTarget?extras().filter(x=>x.inBoxes):extras()):STD_BOX_ITEMS.filter(x=>x.sec===BOX_SECTIONS.indexOf(sec));
+    return `<section class="grp${sec.extra?" extra-grp":""}" data-s="${i}"><div class="grp-h">${esc(sec.title)}<small></small></div>
+    ${list.length?`<div class="list">${list.map(it=>rowHTML(it,withTarget&&!(it.extra&&!it.base))).join("")}</div>`:""}
+    ${sec.extra?`<p class="hint" style="margin:${list.length?"8px":"0"} 4px 8px">${withTarget?"Items added as “kept in every box” show here.":"Anything not on the standard list."}</p><button class="btn ghost" style="width:100%" data-add-extra>Add extra supply</button>`:""}
+    </section>`;}).join("");
+}
+function chipsHTML(flagLabel){
+  return `<div class="chips" role="group" aria-label="Show">
+    ${[["all","All"],["todo","Not counted"],["flag",flagLabel]].map(([f,l])=>`<button data-f="${f}" aria-pressed="${L.filter===f}">${l}</button>`).join("")}</div>`;
+}
+function wireChips(){main().querySelectorAll(".chips button").forEach(b=>b.onclick=()=>{L.filter=b.dataset.f;persist();
+  main().querySelectorAll(".chips button").forEach(x=>x.setAttribute("aria-pressed",x===b));updateRows();});}
+
+/* ---------- box tab ---------- */
+function renderBox(id){
+  const ph=L.phase[id]||"post";
+  const t=tourForBox(id);
+  main().innerHTML=`<div class="card">
+      <div class="row-between"><h2>${esc(boxName(id))}</h2><button class="link danger" id="newcount">Start new count</button></div>
+      <p class="sub">${t?`Going to ${esc(t.name||"next tournament")}${t.date?`, ${fmtDate(t.date)}`:""}`:"Not assigned to a tournament"}</p>
+      <div class="seg" role="group" aria-label="Count type">
+        <button data-p="pre" aria-pressed="${ph==="pre"}">Pre-tournament</button>
+        <button data-p="post" aria-pressed="${ph==="post"}">Post-tournament</button>
+      </div>
+      <p class="hint">${ph==="pre"?"Starting inventory before the tournament. Tap the pink level if an item is fully stocked.":"What’s left after the tournament. Usage is figured from the pre-tournament count."}</p>
+      <div class="meter" id="meter"><i class="m-ok"></i><i class="m-flag"></i></div>
+      <p class="hint" id="tally"></p>
+      ${chipsHTML("Restock")}
+    </div>${sectionsHTML(BOX_TAB_SECTIONS,true)}`;
+  main().querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{L.phase[id]=b.dataset.p;persist();renderBox(id);});
+  $("#newcount").onclick=async()=>{
+    if(!await confirmDlg(`Start a new count for ${boxName(id)}?`,"This clears this box’s pre- and post-tournament counts for everyone. Other boxes, excess inventory, and setup stay. Export a report first if you need one.","Clear counts"))return;
+    if(!LOCAL){try{const r=await api({action:"clear",loc:id});if(!r.ok)throw r;}catch(e){toast("Couldn’t clear while offline. Try again with a connection.");return;}}
+    Object.keys(L.counts).forEach(k=>{if(k.startsWith(id+"|"))delete L.counts[k];});
+    Object.keys(L.pending).forEach(k=>{if(k.startsWith(id+"|"))delete L.pending[k];});
+    L.phase[id]="pre";persist();renderBox(id);toast("Counts cleared");
+  };
+  wireChips();wireRows(id,()=>L.phase[id]||"post");wireAddExtra(true);updateRows();
+}
+
+/* ---------- extra supplies ---------- */
+function wireAddExtra(fromBox){
+  main().querySelectorAll("[data-add-extra]").forEach(b=>b.onclick=()=>{
+    const d=$("#xdlg");$("#x-name").value="";$("#x-note").value="";$("#x-level").value="1";
+    $("#x-in").checked=fromBox;$("#x-lvl-wrap").hidden=!fromBox;$("#x-err").textContent="";openDlg(d);setTimeout(()=>$("#x-name").focus(),50);
+  });
+}
+$("#x-in").onchange=()=>{$("#x-lvl-wrap").hidden=!$("#x-in").checked;};
+$("#x-cancel").onclick=()=>closeDlg($("#xdlg"));
+$("#x-save").onclick=async()=>{
+  const name=$("#x-name").value.trim();
+  if(!name){$("#x-err").textContent="Enter the item name.";return;}
+  if(excessItemsAll().some(i=>i.name.toLowerCase()===name.toLowerCase())){$("#x-err").textContent="That item is already on the list.";return;}
+  const x={id:"x-"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name,note:$("#x-note").value.trim(),inBoxes:$("#x-in").checked,level:$("#x-in").checked?num($("#x-level").value):0,by:L.name};
+  if(!LOCAL){
+    $("#x-err").textContent="Saving…";
+    try{const r=await api({action:"addExtra",extra:x});if(!r.ok)throw r;L.cfg.extras=r.extras;}
+    catch(e){$("#x-err").textContent="Couldn’t add while offline. Try again with a connection.";return;}
+  }else L.cfg.extras=[...(L.cfg.extras||[]),x];
+  persist();closeDlg($("#xdlg"));render();toast(`Added ${name}`);
+};
+function extrasSetupHTML(){
+  const X=L.cfg.extras||[];
+  return `<div class="card"><h3>Extra supplies</h3><p class="sub">Items added beyond the standard list. Anyone counting can add them from a box or the Excess tab.</p>
+    ${X.length?X.map((x,i)=>`<div class="rate" data-x="${i}">
+      <div class="grid2"><label class="field">Item<input data-xk="name" value="${esc(x.name)}"></label><label class="field">Pack size<input data-xk="note" value="${esc(x.note)}" placeholder="Optional"></label></div>
+      <div class="row-between" style="margin-top:8px">
+        <label class="rl" style="margin:0"><input type="checkbox" data-xk="inBoxes" ${x.inBoxes?"checked":""} style="width:18px;height:18px;accent-color:var(--court)"> Kept in every box, level <input data-xk="level" type="number" inputmode="decimal" min="0" step="any" value="${esc(x.level)}"></label>
+        <button class="link danger" data-xdel>Remove</button></div></div>`).join(""):`<p class="empty">None yet.</p>`}
+    <button class="btn ghost" style="width:100%;margin-top:10px" data-add-extra>Add extra supply</button></div>`;
+}
+function wireExtrasSetup(){
+  main().querySelectorAll("[data-x]").forEach(row=>{
+    const x=L.cfg.extras[+row.dataset.x];
+    row.querySelectorAll("[data-xk]").forEach(inp=>{
+      const k=inp.dataset.xk;
+      inp[inp.type==="checkbox"?"onchange":"oninput"]=()=>{x[k]=inp.type==="checkbox"?inp.checked:k==="level"?num(inp.value):inp.value;saveCfg("extras");renderTabs();};
+    });
+    row.querySelector("[data-xdel]").onclick=async()=>{
+      if(!await confirmDlg(`Remove ${x.name}?`,"It disappears from every box and the Excess tab. Its counts stay in the Google Sheet.","Remove"))return;
+      L.cfg.extras=L.cfg.extras.filter(e=>e!==x);saveCfg("extras",0);render();
+    };
+  });
+  wireAddExtra(false);
+}
+
+/* ---------- excess tab ---------- */
+function renderExcess(){
+  main().innerHTML=`<div class="card"><h2>Excess inventory</h2>
+    <p class="sub">Everything not packed in a box, including court-based supplies.</p>
+    <p class="hint">Each item shows what upcoming tournaments need from excess, so shortages stand out as you count.</p>
+    <div class="meter" id="meter"><i class="m-ok"></i><i class="m-flag"></i></div><p class="hint" id="tally"></p>
+    ${chipsHTML("Short")}</div>${sectionsHTML(EXCESS_SECTIONS,false)}`;
+  wireChips();wireRows("excess",()=>"now");wireAddExtra(false);updateRows();
+}
+
+/* ---------- restock tab ---------- */
+function orderRows(){
+  return excessItemsAll().map(it=>{const need=totalNeed(it);const ex=get("excess",it.id,"now");
+    return {it,need,ex,order:Math.max(0,need-(ex||0))};}).filter(r=>r.need>0);
+}
+function renderRestock(){
+  const T=tours();
+  const unassigned=boxes().filter(b=>!tourForBox(b.id));
+  let h=`<div class="card"><h2>Restock</h2><p class="sub">What each upcoming tournament needs, and what excess inventory can’t cover.</p></div>`;
+  if(!T.length)h+=`<div class="card"><p class="empty">No upcoming tournaments yet. Add one in Setup and assign boxes to it.</p></div>`;
+  T.forEach(t=>{
+    const bxs=(t.boxes||[]).filter(b=>boxes().some(x=>x.id===b));
+    h+=`<div class="card accent"><h3>${esc(t.name||"Untitled tournament")}</h3>
+      <p class="sub">${[fmtDate(t.date),`${num(t.courts)} courts`,`${num(t.locs)} AT locations`,`${num(t.days)} days`].filter(Boolean).join(", ")}</p>`;
+    if(!bxs.length)h+=`<p class="warn">No boxes assigned.</p>`;
+    bxs.forEach(b=>{
+      const need=boxItemsAll().map(it=>[it,shortfall(b,it)]).filter(([,n])=>n>0);
+      const u=uncounted(b);
+      h+=`<p style="margin:12px 0 0;font-weight:600">${esc(boxName(b))}</p>`+
+        (need.length?`<ul class="mini">${need.map(([it,n])=>`<li><span>${esc(it.name)}</span><b>${fmt(n)}</b></li>`).join("")}</ul>`:`<p class="empty">Nothing to restock.</p>`)+
+        (u?`<p class="warn">${u} item${u>1?"s":""} not counted yet</p>`:"");
+    });
+    const cn=COURT_ITEMS.map(it=>[it,courtNeed(t,it)]);
+    h+=`<p style="margin:12px 0 0;font-weight:600">Court-based supplies</p>`+
+      (cn.some(([,n])=>n)?`<ul class="mini">${cn.map(([it,n])=>`<li><span>${esc(it.name)} <small class="note" style="display:inline">${esc(it.note)}</small></span><b>${n}</b></li>`).join("")}</ul>`
+        :`<p class="empty">Add courts, AT locations, and days in Setup.</p>`);
+    if(L.cfg.comments["ice-bags"])h+=`<p class="hint">Ice bags: ${esc(L.cfg.comments["ice-bags"])}</p>`;
+    h+=`</div>`;
+  });
+  const O=orderRows();
+  const exTodo=excessItemsAll().filter(it=>get("excess",it.id,"now")===null&&totalNeed(it)>0).length;
+  h+=`<div class="card"><h3>Order list</h3><p class="sub">Total needed for all upcoming tournaments, minus excess on hand.</p>`+
+    (O.length?`<div class="tw"><table class="t"><thead><tr><th>Item</th><th class="n">Need</th><th class="n">Excess</th><th class="n">Order</th></tr></thead><tbody>${
+      O.map(r=>`<tr><td>${esc(r.it.name)}${r.it.note?`<span class="note">${esc(r.it.note)}</span>`:""}</td><td class="n">${fmt(r.need)}</td><td class="n">${r.ex===null?"–":r.ex}</td><td class="n ${r.order?"hot":""}">${fmt(r.order)}</td></tr>`).join("")}</tbody></table></div>`
+      :`<p class="empty">Nothing needed yet.</p>`)+
+    (exTodo?`<p class="warn">${exTodo} needed item${exTodo>1?"s":""} not counted in excess yet</p>`:"")+
+    `<div class="row-between" style="margin-top:12px"><button class="btn ghost sm" id="copy">Copy order list</button></div></div>`;
+  if(unassigned.length){
+    h+=`<div class="card"><h3>Boxes not assigned</h3><p class="sub">Not included in the order list.</p>`;
+    unassigned.forEach(b=>{const need=boxItemsAll().map(it=>[it,shortfall(b,it)]).filter(([,n])=>n>0);
+      h+=`<p style="margin:12px 0 0;font-weight:600">${esc(b.name)}</p>`+(need.length?`<ul class="mini">${need.map(([it,n])=>`<li><span>${esc(it.name)}</span><b>${fmt(n)}</b></li>`).join("")}</ul>`:`<p class="empty">Nothing to restock.</p>`);});
+    h+=`</div>`;
+  }
+  main().innerHTML=h;
+  $("#copy").onclick=()=>copyText(orderText());
+}
+function orderText(){
+  const lines=["Order list"];
+  tours().forEach(t=>lines.push(`For ${t.name||"tournament"}${t.date?` (${fmtDate(t.date)})`:""}: ${(t.boxes||[]).map(boxName).join(", ")||"no boxes"}`));
+  lines.push("");
+  const O=orderRows().filter(r=>r.order>0);
+  if(!O.length)lines.push("Nothing to order.");
+  O.forEach(r=>lines.push(`${r.it.name}${r.it.note?` (${r.it.note})`:""}: ${fmt(r.order)}`));
+  return lines.join("\n");
+}
+async function copyText(t){
+  try{await navigator.clipboard.writeText(t);toast("Copied");}
+  catch(e){const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();
+    try{document.execCommand("copy");toast("Copied");}catch(x){toast("Couldn’t copy");}ta.remove();}
+}
+
+/* ---------- setup tab ---------- */
+function renderSetup(){
+  const A=isAdmin();
+  let h=`<div class="card"><h2>Setup</h2>
+    <div class="grid2" style="margin-top:10px">
+      <label class="field wide">Your name<input id="s-name" value="${esc(L.name)}" placeholder="Shown with your counts"></label>
+    </div>
+    ${LOCAL?`<p class="hint">Running on this device only. Connect a Google Sheet to share counts with trainers.</p>`:
+      `<div class="row-between" style="margin-top:10px"><span class="sub" id="s-sync"></span><button class="btn ghost sm" id="s-refresh">Refresh now</button></div>`}
+  </div>`;
+  if(!A){
+    h+=`<div class="card"><h3>Admin setup</h3><p class="sub">Boxes, tournaments, and restock levels are locked. Enter the admin code to change them.</p>
+      <div class="row-between" style="margin-top:10px;flex-wrap:nowrap"><input id="s-admin" type="password" class="field" style="flex:1;border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:var(--bg);font-size:16px;min-width:0" placeholder="Admin code" autocomplete="off"><button class="btn primary sm" id="s-unlock">Unlock</button></div>
+      <p class="err" id="s-err"></p></div>`;
+    h+=tourSummary();
+  }else{
+    h+=`<div class="card"><div class="row-between"><h3 style="margin:0">Next tournaments</h3><button class="btn primary sm" id="add-t">Add tournament</button></div>
+      <p class="hint">Each box can go to one tournament at a time.</p></div>`;
+    tours().forEach((t,i)=>{
+      h+=`<div class="card accent" data-t="${i}">
+        <div class="grid2">
+          <label class="field wide">Tournament<input data-k="name" value="${esc(t.name)}" placeholder="e.g., Spring Kickoff"></label>
+          <label class="field wide">Date<input data-k="date" type="date" value="${esc(t.date)}"></label>
+        </div>
+        <div class="grid3" style="margin-top:10px">
+          <label class="field">Courts<input data-k="courts" type="number" inputmode="numeric" min="0" value="${esc(t.courts)}" placeholder="0"></label>
+          <label class="field">AT locations<input data-k="locs" type="number" inputmode="numeric" min="0" value="${esc(t.locs)}" placeholder="0"></label>
+          <label class="field">Days<input data-k="days" type="number" inputmode="numeric" min="0" value="${esc(t.days)}" placeholder="0"></label>
+        </div>
+        <p class="hint" style="margin-top:12px">Boxes going to this tournament</p>
+        <div class="boxpick">${boxes().map(b=>{const o=tourForBox(b.id);const mine=(t.boxes||[]).includes(b.id);
+          return `<label><input type="checkbox" data-box="${b.id}" ${mine?"checked":""}>${esc(b.name)}${o&&!mine?` <small>(${esc(o.name||"other")})</small>`:""}</label>`;}).join("")||`<span class="empty">Add a box first.</span>`}</div>
+        <div class="row-between" style="margin-top:10px"><span></span><button class="link danger" data-del-t>Remove tournament</button></div>
+      </div>`;
+    });
+    h+=`<div class="card"><div class="row-between"><h3 style="margin:0">Boxes</h3><button class="btn primary sm" id="add-b">Add box</button></div>
+      <p class="hint">Every box starts with the same restock levels.</p>
+      ${boxes().map(b=>`<div class="row-between" style="margin-top:10px;flex-wrap:nowrap" data-b="${b.id}">
+        <input class="bname" value="${esc(b.name)}" style="flex:1;border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:var(--bg);font-size:16px;min-width:0">
+        <button class="link danger" data-del-b>Remove</button></div>`).join("")}</div>`;
+    h+=`<div class="card"><h3>Court-based supplies</h3><p class="sub">Pulled from excess inventory for each tournament.</p>
+      ${COURT_ITEMS.map(it=>{const r=rate(it);return `<div class="rate" data-r="${it.id}"><span class="name">${esc(it.name)}</span><div class="rl">${it.ice
+        ?`<input data-rk="rate" type="number" inputmode="decimal" step="any" min="0" value="${esc(r.rate)}"> roll per <input data-rk="days" type="number" inputmode="decimal" step="any" min="0" value="${esc(r.days)}"> tournament days`
+        :`<input data-rk="rate" type="number" inputmode="decimal" step="any" min="0" value="${esc(r.rate)}"> ${esc(it.note)} per day per AT location per <input data-rk="per" type="number" inputmode="numeric" min="1" value="${esc(r.per)}"> courts`}</div></div>`;}).join("")}</div>`;
+    h+=`<div class="card"><h3>Box restock levels</h3><p class="sub">How many of each item a full box should have.</p>
+      ${BOX_SECTIONS.map((sec,si)=>`<p style="margin:14px 0 2px;font-weight:600">${esc(sec.title)}</p>${STD_BOX_ITEMS.filter(i=>i.sec===si).map(it=>
+        `<div class="lvl"><span>${esc(it.name)}${it.note?`<span class="note">${esc(it.note)}</span>`:""}</span><input data-lvl="${it.id}" type="number" inputmode="decimal" step="any" min="0" value="${target(it)}"></div>`).join("")}`).join("")}</div>`;
+    h+=extrasSetupHTML();
+    if(!LOCAL)h+=`<div class="card"><button class="link danger" id="s-lock">Lock setup on this device</button></div>`;
+  }
+  main().innerHTML=h;
+  if(!LOCAL&&$("#s-sync"))$("#s-sync").textContent=$("#sync").textContent;
+  $("#s-name").oninput=e=>{L.name=e.target.value.trim();persist();};
+  if($("#s-refresh"))$("#s-refresh").onclick=async()=>{await flush();await load();render();toast("Up to date");};
+  if(!A){
+    $("#s-unlock").onclick=async()=>{
+      const v=$("#s-admin").value.trim();if(!v)return;
+      try{const r=await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"checkAdmin",code:L.code,admin:v})}).then(x=>x.json());
+        if(r.ok){L.admin=v;persist();render();toast("Setup unlocked");}else $("#s-err").textContent="That admin code didn’t work.";
+      }catch(e){$("#s-err").textContent="Can’t check the code while offline.";}
+    };
+    return;
+  }
+  if($("#s-lock"))$("#s-lock").onclick=()=>{L.admin="";persist();render();};
+  wireExtrasSetup();
+  $("#add-t").onclick=()=>{L.cfg.tournaments=[...tours(),{id:"t"+Date.now().toString(36),name:"",date:"",courts:"",locs:"",days:"",boxes:[]}];saveCfg("tournaments",0);render();};
+  main().querySelectorAll("[data-t]").forEach(card=>{
+    const t=tours()[+card.dataset.t];
+    card.querySelectorAll("[data-k]").forEach(inp=>inp.oninput=()=>{t[inp.dataset.k]=inp.value;saveCfg("tournaments");});
+    card.querySelectorAll("[data-box]").forEach(cb=>cb.onchange=()=>{
+      const b=cb.dataset.box;
+      tours().forEach(o=>o.boxes=(o.boxes||[]).filter(x=>x!==b));
+      if(cb.checked)t.boxes.push(b);
+      saveCfg("tournaments",0);render();
+    });
+    card.querySelector("[data-del-t]").onclick=async()=>{
+      if(!await confirmDlg(`Remove ${t.name||"this tournament"}?`,"Its boxes become unassigned. Counts aren’t affected.","Remove"))return;
+      L.cfg.tournaments=tours().filter(x=>x!==t);saveCfg("tournaments",0);render();
+    };
+  });
+  $("#add-b").onclick=()=>{const id="b"+Date.now().toString(36);L.cfg.boxes=[...boxes(),{id,name:`Box ${boxes().length+1}`}];saveCfg("boxes",0);render();};
+  main().querySelectorAll("[data-b]").forEach(row=>{
+    const b=boxes().find(x=>x.id===row.dataset.b);
+    row.querySelector(".bname").oninput=e=>{b.name=e.target.value;saveCfg("boxes");renderTabs();};
+    row.querySelector("[data-del-b]").onclick=async()=>{
+      if(!await confirmDlg(`Remove ${b.name}?`,"This deletes the box and all of its counts for everyone. This can’t be undone.","Remove box"))return;
+      if(!LOCAL){try{const r=await api({action:"clear",loc:b.id});if(!r.ok)throw r;}catch(e){toast("Couldn’t remove while offline.");return;}}
+      Object.keys(L.counts).forEach(k=>{if(k.startsWith(b.id+"|"))delete L.counts[k];});
+      L.cfg.boxes=boxes().filter(x=>x!==b);
+      tours().forEach(o=>o.boxes=(o.boxes||[]).filter(x=>x!==b.id));
+      saveCfg("boxes",0);saveCfg("tournaments",0);render();
+    };
+  });
+  main().querySelectorAll("[data-r]").forEach(row=>row.querySelectorAll("[data-rk]").forEach(inp=>inp.oninput=()=>{
+    const id=row.dataset.r;L.cfg.rates[id]=Object.assign({},L.cfg.rates[id]||{},{[inp.dataset.rk]:inp.value});saveCfg("rates");}));
+  main().querySelectorAll("[data-lvl]").forEach(inp=>inp.oninput=()=>{
+    L.cfg.targets[inp.dataset.lvl]=inp.value===""?null:num(inp.value);saveCfg("targets");});
+}
+function tourSummary(){
+  if(!tours().length)return `<div class="card"><h3>Next tournaments</h3><p class="empty">None set up yet.</p></div>`;
+  return `<div class="card"><h3>Next tournaments</h3><ul class="mini">${tours().map(t=>`<li><span>${esc(t.name||"Untitled")}${t.date?`, ${fmtDate(t.date)}`:""}</span><span>${(t.boxes||[]).map(boxName).map(esc).join(", ")||"No boxes"}</span></li>`).join("")}</ul></div>`;
+}
+
+/* ---------- exports ---------- */
+function stamp(){return new Date().toISOString().slice(0,10);}
+function saveFile(name,data,type){
+  const blob=data instanceof Blob?data:new Blob([data],{type});const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+}
+const csvCell=v=>{v=String(v??"");return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v;};
+function buildCSV(){
+  const o=[];
+  o.push(["Medical Supply Inventory"],["Exported",new Date().toLocaleString(),"By",L.name||""],[]);
+  o.push(["Upcoming tournaments"],["Tournament","Date","Courts","AT locations","Days","Boxes"]);
+  tours().forEach(t=>o.push([t.name,t.date,num(t.courts),num(t.locs),num(t.days),(t.boxes||[]).map(boxName).join("; ")]));
+  o.push([],["Order list"],["Item","Pack size","Needed","In excess","To order"]);
+  orderRows().forEach(r=>o.push([r.it.name,r.it.note,fmt(r.need),r.ex===null?"":r.ex,fmt(r.order)]));
+  o.push([],["Box counts"],["Box","Assigned to","Section","Item","Pack size","Restock level","Pre count","Post count","Used","Restock qty"]);
+  boxes().forEach(b=>{const t=tourForBox(b.id);boxItemsAll().forEach(it=>{const pre=get(b.id,it.id,"pre"),post=get(b.id,it.id,"post");
+    o.push([b.name,t?t.name:"",secTitle(it),it.name,it.note,target(it),pre??"",post??"",pre!==null&&post!==null?fmt(Math.max(0,pre-post)):"",shortfall(b.id,it)||""]);});});
+  o.push([],["Excess inventory"],["Section","Item","Pack size","On hand","Needed for upcoming","Short","Notes"]);
+  excessItemsAll().forEach(it=>{const c=get("excess",it.id,"now"),n=totalNeed(it);
+    o.push([it.court?COURT_SECTION.title:secTitle(it),it.name,it.note,c??"",n||"",c!==null&&c<n?fmt(n-c):"",L.cfg.comments[it.id]||""]);});
+  return "\ufeff"+o.map(r=>r.map(csvCell).join(",")).join("\r\n");
+}
+const pt=t=>String(t??"").replace(/[’‘]/g,"'").replace(/[“”]/g,'"').replace(/[–—−]/g,"-");
+function buildPDF(){
+  const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:"pt",format:"letter"});
+  const Lm=40;let y=48;const head={fillColor:[30,79,156],textColor:255,fontStyle:"bold"};
+  const H=(txt,size=13)=>{if(y>700){doc.addPage();y=48;}doc.setFont("helvetica","bold");doc.setFontSize(size);doc.setTextColor(0);doc.text(pt(txt),Lm,y);y+=8;};
+  const tbl=(hd,body,opts={})=>{doc.autoTable(Object.assign({startY:y,margin:{left:Lm,right:Lm},headStyles:head,styles:{fontSize:9}},opts,{head:[hd],body:body.map(r=>r.map(pt))}));y=doc.lastAutoTable.finalY+22;};
+  doc.setFont("helvetica","bold");doc.setFontSize(18);doc.text("Medical Supply Inventory",Lm,y);y+=18;
+  doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(100);
+  doc.text(pt(`Exported ${new Date().toLocaleString()}${L.name?` by ${L.name}`:""}`),Lm,y);y+=26;
+  H("Upcoming tournaments");
+  if(tours().length)tbl(["Tournament","Date","Courts","AT locations","Days","Boxes"],tours().map(t=>[t.name||"Untitled",fmtDate(t.date),num(t.courts),num(t.locs),num(t.days),(t.boxes||[]).map(boxName).join(", ")]));
+  else{y+=6;doc.setFont("helvetica","normal");doc.setFontSize(10);doc.text("None set up.",Lm,y);y+=22;}
+  H("Order list");
+  const O=orderRows();
+  if(O.length)tbl(["Item","Needed","In excess","To order"],O.map(r=>[r.it.name+(r.it.note?` (${r.it.note})`:""),fmt(r.need),r.ex===null?"-":r.ex,fmt(r.order)]),
+    {columnStyles:{1:{halign:"center"},2:{halign:"center"},3:{halign:"center",fontStyle:"bold",textColor:[192,57,30]}}});
+  else{y+=6;doc.setFont("helvetica","normal");doc.setFontSize(10);doc.text("Nothing needed.",Lm,y);y+=22;}
+  boxes().forEach(b=>{const t=tourForBox(b.id);
+    H(`${b.name}${t?` (for ${t.name||"tournament"})`:""}`);
+    tbl(["Item","Level","Pre","Post","Used","Restock"],boxItemsAll().map(it=>{const pre=get(b.id,it.id,"pre"),post=get(b.id,it.id,"post");
+      return [it.name+(it.note?` (${it.note})`:""),target(it),pre??"-",post??"-",pre!==null&&post!==null?fmt(Math.max(0,pre-post)):"",shortfall(b.id,it)||""];}),
+      {columnStyles:{1:{halign:"center"},2:{halign:"center"},3:{halign:"center"},4:{halign:"center"},5:{halign:"center",fontStyle:"bold",textColor:[192,57,30]}}});
+  });
+  H("Excess inventory");
+  tbl(["Item","On hand","Needed","Short"],excessItemsAll().map(it=>{const c=get("excess",it.id,"now"),n=totalNeed(it);
+    return [it.name+(it.note?` (${it.note})`:"")+(L.cfg.comments[it.id]?`\nNote: ${L.cfg.comments[it.id]}`:""),c??"-",n||"",c!==null&&c<n?fmt(n-c):""];}),
+    {columnStyles:{1:{halign:"center"},2:{halign:"center"},3:{halign:"center",fontStyle:"bold",textColor:[192,57,30]}}});
+  const P=doc.getNumberOfPages();
+  for(let p=1;p<=P;p++){doc.setPage(p);doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(120);
+    doc.text(`Page ${p} of ${P}`,doc.internal.pageSize.getWidth()-Lm,doc.internal.pageSize.getHeight()-20,{align:"right"});}
+  return doc.output("blob");
+}
+$("#pdf").onclick=()=>{if(!window.jspdf){toast("PDF tools didn’t load. Check your connection and reload.");return;}
+  try{saveFile(`medical-inventory-${stamp()}.pdf`,buildPDF(),"application/pdf");}catch(e){toast("Couldn’t build the PDF");}};
+$("#csv").onclick=()=>{try{saveFile(`medical-inventory-${stamp()}.csv`,buildCSV(),"text/csv;charset=utf-8");}catch(e){toast("Couldn’t build the CSV");}};
+
+/* ---------- connect ---------- */
+function showConnect(err){
+  const d=$("#connect");$("#k-name").value=L.name;$("#k-err").textContent=err||"";openDlg(d);
+}
+$("#k-go").onclick=async()=>{
+  const name=$("#k-name").value.trim(),code=$("#k-code").value.trim();
+  if(!name||!code){$("#k-err").textContent="Enter your name and the team code.";return;}
+  L.name=name;L.code=code;persist();$("#k-err").textContent="Checking…";
+  try{const r=await api({action:"load"});
+    if(!r.ok){$("#k-err").textContent=r.error==="bad_code"?"That team code didn’t work.":"Couldn’t connect. Try again.";L.code="";persist();return;}
+    closeDlg($("#connect"));await load();render();
+  }catch(e){$("#k-err").textContent="Couldn’t reach the inventory. Check your connection.";}
+};
+$("#connect").addEventListener("cancel",e=>e.preventDefault());
+
+/* ---------- start ---------- */
+render();
+if(LOCAL){setSync("local");}
+else if(!L.code){setSync("idle");showConnect();}
+else{setSync(Object.keys(L.pending).length?"offline":"idle");load().then(ok=>{if(ok)softRefresh();});scheduleFlush(500);}
+if(!LOCAL){
+  setInterval(()=>{if(document.visibilityState==="visible"&&L.code&&!flushing)load().then(()=>softRefresh());},20000);
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&L.code){flush();load().then(()=>softRefresh());}});
+  window.addEventListener("online",()=>{flush();});
+}
+})();
+</script>
+</body>
+</html>
