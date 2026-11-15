@@ -678,11 +678,11 @@ function rowHTML(it,withTarget){
   return `<div class="item" data-id="${esc(it.id)}">
     <div><span class="name">${esc(it.name)}${(()=>{const bits=[it.note,!withTarget&&unitPlural(it)?`count in ${unitPlural(it)}`:""].filter(Boolean);return bits.length?`<span class="note">${esc(bits.join(", "))}</span>`:"";})()}</span><div class="status"></div></div>
     <div class="ctrl">
-      ${withTarget?`<button class="target" aria-label="Mark ${esc(it.name)} full"></button>`:""}
+      ${withTarget?`<button class="target" tabindex="-1" aria-label="Mark ${esc(it.name)} full"></button>`:""}
       <div class="step">
-        <button data-d="-1" aria-label="One less ${esc(it.name)}">−</button>
+        <button data-d="-1" tabindex="-1" aria-label="One less ${esc(it.name)}">−</button>
         <input type="number" inputmode="decimal" min="0" step="any" placeholder="–" aria-label="${esc(it.name)} count">
-        <button data-d="1" aria-label="One more ${esc(it.name)}">+</button>
+        <button data-d="1" tabindex="-1" aria-label="One more ${esc(it.name)}">+</button>
       </div>
     </div>
     ${it.ice&&!withTarget?`<div class="extra">Notes<input type="text" data-comment placeholder="e.g., extra for outdoor courts"></div>`:""}
@@ -993,7 +993,19 @@ async function clearLocs(locs){
   if(LOCAL)return true;
   try{for(const loc of locs){const r=await api({action:"clear",loc});if(!r.ok)throw r;}return true;}catch(e){return false;}
 }
+/* remember which field had focus so a redraw doesn't kick you out of it */
+function focusKey(el){
+  if(!el||!main().contains(el))return null;
+  const own=["data-k","data-court","data-box","data-cut","data-tier","data-lvl","data-xk"].find(a=>el.hasAttribute(a));
+  let sel=el.id?"#"+CSS.escape(el.id):own?`[${own}="${CSS.escape(el.getAttribute(own))}"]`:el.classList.contains("bname")?".bname":null;
+  if(!sel)return null;
+  const box=el.parentElement&&el.parentElement.closest("[data-t],[data-r],[data-b],[data-x]");
+  if(box){const a=["data-t","data-r","data-b","data-x"].find(x=>box.hasAttribute(x));sel=`[${a}="${CSS.escape(box.getAttribute(a))}"] ${sel}`;}
+  return sel;
+}
+const laterSetup=()=>setTimeout(()=>{if(L.tab==="setup")renderSetup();},0);
 function renderSetup(){
+  const fk=focusKey(document.activeElement);
   const A=isAdmin();
   let h=`<div class="card"><h2>Setup</h2>
     <div class="grid2" style="margin-top:10px"><label class="field wide">Your name<input id="s-name" value="${esc(L.name)}" placeholder="Shown with your counts"></label></div>
@@ -1038,6 +1050,7 @@ function renderSetup(){
     if(!LOCAL)h+=`<div class="card"><button class="link danger" id="s-lock">Lock setup on this device</button></div>`;
   }
   main().innerHTML=h;
+  if(fk){const e=main().querySelector(fk);if(e)e.focus({preventScroll:true});}
   if(!LOCAL&&$("#s-sync"))$("#s-sync").textContent=$("#sync").textContent;
   $("#s-name").oninput=e=>{L.name=e.target.value.trim();persist();};
   if($("#s-refresh"))$("#s-refresh").onclick=async()=>{await flush();await load();render();toast("Up to date");};
@@ -1065,15 +1078,17 @@ function renderSetup(){
     const tid=card.dataset.t, T=()=>tourById(tid);
     card.querySelectorAll("[data-k]").forEach(inp=>{
       inp.oninput=()=>{const t=T();if(!t)return;t[inp.dataset.k]=inp.value;saveCfg("tournaments");renderTabs();};
-      if(inp.dataset.k==="locs")inp.onchange=()=>{saveCfg("tournaments");renderSetup();};
-      if(inp.dataset.k==="date"||inp.dataset.k==="name")inp.onchange=()=>{const t=T();if(t&&inp.dataset.k==="name")L.openEv=sorg+"|"+t.name;saveCfg("tournaments");persist();renderSetup();};
+      if(inp.dataset.k==="locs")inp.onchange=()=>{saveCfg("tournaments");laterSetup();};
+      if(inp.dataset.k==="name")inp.onchange=()=>{const t=T();if(t)L.openEv=sorg+"|"+t.name;saveCfg("tournaments");persist();laterSetup();};
+      /* dates: redraw only after leaving the field, so the date picker stays open */
+      if(inp.dataset.k==="date")inp.onblur=()=>{if(inp.value!==inp.defaultValue){saveCfg("tournaments");persist();laterSetup();}};
     });
     card.querySelectorAll("[data-court]").forEach(inp=>inp.oninput=()=>{
       const t=T();if(!t)return;const a=locCourts(t).map(c=>c??"");a[+inp.dataset.court]=inp.value.trim();t.courts=a.join(",");saveCfg("tournaments");});
     card.querySelectorAll("[data-box]").forEach(cb=>cb.onchange=()=>{
       const t=T();if(!t)return;const b=cb.dataset.box;
       t.boxes=(t.boxes||[]).filter(x=>x!==b);if(cb.checked)t.boxes.push(b);
-      saveCfg("tournaments",0);renderSetup();
+      saveCfg("tournaments",0);laterSetup();
     });
     card.querySelector("[data-del-t]").onclick=async()=>{
       const t=T();if(!t)return;
@@ -1197,6 +1212,24 @@ $("#k-go").onclick=async()=>{
   }catch(e){$("#k-err").textContent="Couldn’t reach the inventory. Check your connection.";}
 };
 $("#connect").addEventListener("cancel",e=>e.preventDefault());
+
+/* ---------- Enter key: submit dialogs and codes, otherwise move to the next box ---------- */
+document.addEventListener("keydown",e=>{
+  const el=e.target;
+  if(e.key!=="Enter"||e.isComposing||el.tagName!=="INPUT"||el.type==="checkbox")return;
+  e.preventDefault();
+  const dlg=el.closest("dialog");
+  if(dlg){
+    const ins=[...dlg.querySelectorAll("input:not([type=checkbox])")].filter(i=>i.offsetParent);
+    const next=ins[ins.indexOf(el)+1];
+    if(next&&!next.value){next.focus();return;}
+    const go=dlg.querySelector(".dlg-actions .btn.primary");if(go)go.click();return;
+  }
+  if(el.id==="s-admin"){$("#s-unlock").click();return;}
+  const ins=[...main().querySelectorAll("input:not([type=checkbox])")].filter(i=>i.offsetParent&&!i.disabled);
+  const next=ins[ins.indexOf(el)+1];
+  if(next){next.focus();if(next.select&&next.type!=="date")try{next.select();}catch(x){}}else el.blur();
+});
 
 /* ---------- start ---------- */
 render();
