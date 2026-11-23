@@ -761,7 +761,7 @@ function wireRows(loc,phaseFn){
   main().querySelectorAll(".item").forEach(row=>{
     const id=row.dataset.id, inp=row.querySelector(".step input");
     const cur=()=>get(loc,id,phaseFn());
-    if(isLocked(loc)){row.querySelectorAll("input,button").forEach(x=>x.disabled=true);}
+    if(isLocked(loc,phaseFn())){row.querySelectorAll("input,button").forEach(x=>x.disabled=true);}
     row.querySelectorAll(".step button").forEach(b=>b.onclick=()=>{
       const c=cur();const d=num(b.dataset.d);
       const n=c===null?(d>0?1:0):Math.max(0,c+d);
@@ -809,7 +809,7 @@ function updateRows(skipRow){
     }
     row.classList.remove("ok","flag");if(k!=="todo")row.classList.add(k);
     row.querySelector(".status").textContent=msg;
-    row.querySelector(".clr").hidden=c===null||isLocked(loc);
+    row.querySelector(".clr").hidden=c===null||isLocked(loc,phase);
     const qm=!ql||(it.name+" "+(it.note||"")+" "+secTitle(it)).toLowerCase().includes(ql);
     row.classList.toggle("hide",!qm||(L.filter!=="all"&&k!==L.filter));
     const sk=row.closest("section").dataset.s;
@@ -850,31 +850,31 @@ function wireChips(){main().querySelectorAll(".chips button").forEach(b=>b.oncli
 
 /* ---------- clearing ---------- */
 const phaseName=p=>p==="pre"?"pre-tournament":"post-tournament";
-/* "Save and complete": stored as a count row (item _done) so it syncs for everyone without admin rights */
+/* "Save and complete": stored as a count row (item _done, in the phase it locks) so it syncs for everyone without admin rights.
+   The pre- and post-tournament counts lock separately. */
 const LOCK="_done";
-const lockedAt=loc=>get(loc,LOCK,"post");
-const isLocked=loc=>lockedAt(loc)!==null;
-function lockBannerHTML(loc){
-  if(!isLocked(loc))return "";
-  const d=new Date(lockedAt(loc));
-  return `<div class="done"><span>✓ Completed ${esc(d.toLocaleDateString(undefined,{month:"short",day:"numeric"}))}. Counts are locked.</span>${isAdmin()?`<button class="link" id="reopen">Reopen</button>`:""}</div>`;
+const lockedAt=(loc,ph)=>get(loc,LOCK,ph);
+const isLocked=(loc,ph)=>lockedAt(loc,ph)!==null;
+function lockBannerHTML(loc,ph){
+  if(!isLocked(loc,ph))return "";
+  const d=new Date(lockedAt(loc,ph));
+  return `<div class="done"><span>✓ ${ph==="pre"?"Pre":"Post"}-tournament count completed ${esc(d.toLocaleDateString(undefined,{month:"short",day:"numeric"}))}. It’s locked.</span>${isAdmin()?`<button class="link" id="reopen">Reopen</button>`:""}</div>`;
 }
 function completeHTML(loc,ph){
-  if(isLocked(loc))return "";
-  if(ph!=="post")return `<p class="hint" style="margin:0 4px 8px">Switch to Post-tournament to save and complete this count.</p>`;
-  return `<button class="btn primary complete" id="complete">Save and complete post-tournament count</button>`;
+  if(isLocked(loc,ph))return "";
+  return `<button class="btn primary complete" id="complete">Save and complete ${phaseName(ph)} count</button>`;
 }
-function wireComplete(loc,what,where,list){
+function wireComplete(loc,ph,what,where,list){
   const c=$("#complete");
   if(c)c.onclick=async()=>{
-    const left=list.filter(it=>get(loc,it.id,"post")===null).length;
-    if(!await confirmDlg(`Complete ${what}?`,`${left?`${left} item${left>1?"s have":" has"} no post-tournament count yet. `:""}This saves and locks the pre- and post-tournament counts for ${what} at ${where}, for everyone.${isAdmin()?"":" Only an admin can reopen it."}`,"Save and complete"))return;
-    setCount(loc,LOCK,"post",Date.now());clearTimeout(flushTimer);flush();render();toast("Count saved and completed");
+    const left=list.filter(it=>get(loc,it.id,ph)===null).length;
+    if(!await confirmDlg(`Complete ${what}’s ${phaseName(ph)} count?`,`${left?`${left} item${left>1?"s have":" has"} no ${phaseName(ph)} count yet. `:""}This saves and locks the ${phaseName(ph)} count for ${what} at ${where}, for everyone.${isAdmin()?"":" Only an admin can reopen it."}`,"Save and complete"))return;
+    setCount(loc,LOCK,ph,Date.now());clearTimeout(flushTimer);flush();render();toast(`${ph==="pre"?"Pre":"Post"}-tournament count saved and completed`);
   };
   const r=$("#reopen");
   if(r)r.onclick=async()=>{
-    if(!await confirmDlg(`Reopen ${what}?`,`Counts for ${what} at ${where} can be changed again.`,"Reopen"))return;
-    setCount(loc,LOCK,"post",null);render();toast("Count reopened");
+    if(!await confirmDlg(`Reopen ${what}’s ${phaseName(ph)} count?`,`The ${phaseName(ph)} count for ${what} at ${where} can be changed again.`,"Reopen"))return;
+    setCount(loc,LOCK,ph,null);render();toast("Count reopened");
   };
 }
 async function clearPhase(loc,phase,what,where){
@@ -913,12 +913,12 @@ function renderBox(id){
       <p class="hint" id="tally"></p>
       ${chipsHTML("Restock")}
       ${searchHTML("Search this box")}
-      ${isLocked(loc)?lockBannerHTML(loc):`<div class="row-between" style="margin-top:6px"><span></span><button class="link danger" id="newcount">Clear this box’s ${ph}-tournament count</button></div>`}
+      ${isLocked(loc,ph)?lockBannerHTML(loc,ph):`<div class="row-between" style="margin-top:6px"><span></span><button class="link danger" id="newcount">Clear this box’s ${ph}-tournament count</button></div>`}
     </div>${groupsHTML(boxItemsFor(id),true,false)}${completeHTML(loc,ph)}`;
   $("#tsel").onchange=e=>{pickTour(e.target.value);render();};
   main().querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{L.phase[id]=b.dataset.p;persist();renderCtx();renderBox(id);});
   if($("#newcount"))$("#newcount").onclick=()=>clearPhase(loc,ph,boxName(id),sessName(tid));
-  wireComplete(loc,boxName(id),sessName(tid),boxItemsFor(id));
+  wireComplete(loc,ph,boxName(id),sessName(tid),boxItemsFor(id));
   wireChips();wireRows(loc,()=>L.phase[id]||"post");wireAddExtra(true);wireSearch(()=>updateRows());updateRows();
 }
 /* ---------- extra supplies ---------- */
@@ -1043,12 +1043,12 @@ function renderExcess(){
     <div class="meter" id="meter"><i class="m-ok"></i><i class="m-flag"></i></div><p class="hint" id="tally"></p>
     ${chipsHTML("Short")}
     ${searchHTML("Search excess supplies")}
-    ${isLocked(loc)?lockBannerHTML(loc):`<div class="row-between" style="margin-top:6px"><span></span><button class="link danger" id="newcount">Clear the excess ${ph}-tournament count</button></div>`}
+    ${isLocked(loc,ph)?lockBannerHTML(loc,ph):`<div class="row-between" style="margin-top:6px"><span></span><button class="link danger" id="newcount">Clear the excess ${ph}-tournament count</button></div>`}
   </div>${groupsHTML(items(),false,true)}${completeHTML(loc,ph)}`;
   $("#tsel").onchange=e=>{pickTour(e.target.value);render();};
   main().querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{L.phase.excess=b.dataset.p;persist();renderCtx();renderExcess();});
   if($("#newcount"))$("#newcount").onclick=()=>clearPhase(loc,ph,`${org} excess`,sessName(tid));
-  wireComplete(loc,`${org} excess`,sessName(tid),excessItemsAll());
+  wireComplete(loc,ph,`${org} excess`,sessName(tid),excessItemsAll());
   wireChips();wireRows(loc,()=>L.phase.excess||"post");wireAddExtra(false);wireSearch(()=>updateRows());updateRows();
 }
 
