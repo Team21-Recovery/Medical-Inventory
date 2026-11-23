@@ -98,8 +98,8 @@ section.grp{margin-bottom:18px}
 
 .field{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:500}
 .field input,.field select{border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:var(--bg);font-size:16px;min-width:0;color:var(--ink)}
-.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
-.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .wide{grid-column:1/-1}
 .boxpick{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .boxpick label{display:flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:999px;padding:6px 12px 6px 8px;font-weight:600;font-size:14px;cursor:pointer}
@@ -119,8 +119,6 @@ table.t{width:100%;border-collapse:collapse;font-size:15px}
 .t tr:last-child td{border-bottom:0}
 .t .n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .t .hot{color:var(--flag);font-weight:700}
-.t input{width:56px;border:1px solid var(--line);border-radius:6px;padding:5px 2px;background:var(--bg);text-align:center;font-size:15px}
-.t .note{white-space:normal}
 .tw{overflow-x:auto}
 .mini{margin:6px 0 0;padding:0;list-style:none;font-size:15px}
 .mini li{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px dashed var(--line)}
@@ -195,6 +193,14 @@ details.ev > .btn{margin:0 12px 12px;width:calc(100% - 24px)!important}
 .orgbar{max-width:760px;margin:0 auto;padding:2px 16px 6px;display:flex;gap:6px}
 .orgbar button{flex:1;border:1.5px solid rgba(255,255,255,.6);background:transparent;color:inherit;border-radius:999px;padding:7px 10px;font:700 16px "Barlow Condensed","Arial Narrow",sans-serif;cursor:pointer;letter-spacing:.3px}
 .orgbar button[aria-pressed="true"]{background:var(--court-ink);color:var(--court);border-color:var(--court-ink)}
+
+.search{margin-top:12px}
+.search input{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px 10px 36px;font-size:16px;background:var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238592A0' stroke-width='2.5' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 12px center;color:var(--ink)}
+.search input:focus{border-color:var(--court);outline:none}
+.qhide{display:none!important}
+
+.clr{background:none;border:0;padding:4px 0 0;color:var(--muted);font-size:13px;font-weight:600;text-decoration:underline;cursor:pointer}
+.clr:hover{color:var(--flag)}
 </style>
 </head>
 <body>
@@ -249,22 +255,22 @@ const LOCAL = !API_URL;
 const LS = "msi-v2";
 
 const U={jar:["jar","jars"],box:["box","boxes"],bottle:["bottle","bottles"],ampule:["ampule","ampules"],
-  roll:["roll","rolls"],pack:["pack","packs"],tube:["tube","tubes"],sleeve:["sleeve","sleeves"],wrap:["wrap","wraps"],can:["can","cans"]};
+  roll:["roll","rolls"],pack:["pack","packs"],tube:["tube","tubes"],sleeve:["sleeve","sleeves"],wrap:["wrap","wraps"]};
 // [id, name, full-box quantity, unit]
 const BOX_SECTIONS = [
   {title:"Wound care", items:[
-    ["2nd-skin","2nd Skin",1,"jar"],["band-aids-1-3-strips","Bandaids – 1x3 Strips",2,"box","100 per box"],
+    ["2nd-skin","2nd Skin",1,"jar"],["band-aids-1-3-strips","Bandaids – 1x3 Strips",2,"box","300 per box"],
     ["band-aids-4-wing","Bandaids – 4 Wing",2,"box","50 per box"],["band-aids-knuckle","Bandaids – Knuckle",2,"box","100 per box"],
-    ["eye-drops","Eye Drops",1,"bottle"],["hibiclens","Hibiclens",1,"bottle","4 oz"],["hand-sanitizer","Hand Sanitizer",1,"bottle"],
+    ["eye-drops","Eye Drops",1,"bottle"],["hand-sanitizer","Hand Sanitizer",1,"bottle"],
     ["hydrocortisone-single-packets","Hydrocortisone Single Packets",1,"box","144 per box"],["hydrogen-peroxide","Hydrogen Peroxide",1,"bottle"],
     ["isopropyl-alcohol","Isopropyl Alcohol",1,"bottle"],["mastisol","Mastisol",10,"ampule"],
     ["non-adherent-pads","Non Adherent Pads",1,"box"],["nose-plugs","Nose Plugs",4,"roll"],
     ["ns-new-sponges","NS New Sponges",1,"box"],["skin-lube","Skin Lube",1,"tube"],
     ["steri-strips","Steri Strips",5,"sleeve"],["sterile-4x4-gauze","Sterile 4x4 Gauze",1,"box"],
-    ["triple-antibiotic-single-packets","Triple Antibiotic Single Packets",1,"box"],["wound-wash-saline-spray","Wound Wash Saline Spray",1,"bottle","7.4 oz can"]]},
+    ["triple-antibiotic-single-packets","Triple Antibiotic Single Packets",1,"box"],["wound-wash-saline-spray","Wound Wash Saline Spray",1,"bottle","4 oz can"]]},
   {title:"Tapes", items:[
     ["cover-roll","Cover Roll",1,"roll"],["1-inch-elastikon-or-ac-plus","1-inch Elastikon",1,"box","12 rolls per box"],
-    ["inch-tape","½-inch White Tape",2,"box"],["2-inch-elastikon-or-ac-plus","2-inch Elastikon",1,"box","6 rolls per box"],["tuf-skin","Tuf-Skin",1,"can","4 oz spray"]]},
+    ["inch-tape","¼-inch Tape",2,"box"],["2-inch-elastikon-or-ac-plus","2-inch Elastikon",1,"box","6 rolls per box"]]},
   {title:"Splints & bracing", items:[
     ["36-sam-splint","36\" SAM Splint",3,""],["4-inch-single","4-inch Single",6,"wrap"],
     ["6-inch-double","6-inch Double",4,"wrap"],["6-inch-single","6-inch Single",6,"wrap"],
@@ -274,79 +280,22 @@ const BOX_SECTIONS = [
     ["gloves-large","Gloves – Large",1,"box"],["gloves-medium","Gloves – Medium",1,"box"],
     ["ibuprofen-single-dose-packs","Ibuprofen – Single Dose Packs",1,"box","250 packs per box"],["scissors","Scissors",1,""],
     ["shark","Shark",1,""],["stop-pain-single-dose-packs","Stop Pain – Single Dose Packs",1,"box"],
-    ["tampons","Tampons",1,"box"],["tums-single-dose-packs","Tums – Single Dose Packs",1,"box","75 two-packs per box"]]}
+    ["tampons","Tampons",1,"box"],["tums-single-dose-packs","Tums – Single Dose Packs",1,"box","250 packs per box"]]}
 ];
 const COURT_SECTION = {title:"Tournament supplies", court:true, items:[
-  // tier = amount per AT location for the whole tournament: [League Play, Small, Medium, Large] by court count
-  ["1-white-tape","1½\" White Tape",{tier:[1,2,4,6]},"box"],
-  ["ecoflex-2","EcoFlex 2\"",{tier:[1,2,2,3]},"box"],
-  ["flexi-wrap","Flexi-wrap",{tier:[1,1,1,2]},"roll"],
-  ["ice-bags","Ice Bags",{ice:true,tier:[0.25,0.5,0.5,1]},"roll"],
-  ["powerflex-1","EcoFlex 1\"",{tier:[0.5,1,2,3]},"box"],
-  ["prewrap","Prewrap",{tier:[0.5,1,1,2]},"box"]]};
-/* kept in excess only, never packed in a box */
-const EXONLY_SECTION={title:"Excess only", exonly:true, items:[
-  ["shark-blades","Shark Replacement Blades",0,"box","10 per box"]]};
+  ["1-white-tape","1½\" White Tape",{rate:2},"box"],
+  ["ecoflex-2","EcoFlex 2\"",{rate:1.5},"box"],
+  ["flexi-wrap","Flexi-wrap",{rate:0},"roll"],
+  ["ice-bags","Ice Bags",{ice:true,rate:1,days:3},"roll"],
+  ["powerflex-1","Powerflex 1\"",{rate:1},"box"],
+  ["prewrap","Prewrap",{rate:0.5},"box"]]};
 
-/* Henry Schein catalog: item id -> [item code, description, inventory units per Henry Schein selling unit] */
-const HS={
-  "1-white-tape":["1348646","950 Porous Athletic Tape Cotton/Zinc Oxide 1.5\"x15yd White Non-Sterile 32/Bx"],
-  "ecoflex-2":["1345853","Eco-Flex Underwrap/Wound Dressing Tape Elastic 2\"x6yd Black 24Rl/Ca"],
-  "flexi-wrap":["1340297","Flex-I-Wrap Compression Wrap 6\""],
-  "ice-bags":["3240021","Ice Bag Roll 10x18\""],
-  "powerflex-1":["7350055","Eco-Flex Athletic Tape Cloth 1\"x6yd Black 48Rl/Ca"],
-  "prewrap":["3640173","Athletic Underwrap Foam 2.75\"x30yd Navy 48/Ca"],
-  "2nd-skin":["6452314","2nd Skin Blister Prevention Bandage Hydrogel 1x1\" Blue Non-Sterile 200/jr"],
-  "band-aids-1-3-strips":["1271254","American White Cross Adhesive Bandage Fabric 1x3\" Tan Sterile 100/Bx"],
-  "band-aids-4-wing":["1271255","American White Cross Adhesive Bandage Fabric 3x2.88\" Tan Sterile 50/Bx"],
-  "band-aids-knuckle":["1271246","American White Cross Adhesive Bandage 1.5x3\" Beige Sterile 100/Bx"],
-  "eye-drops":["1514399","Medi-First Eye/Skin Wash Solution 98.3% 4oz/Bt"],
-  "hand-sanitizer":["5900066","Purell Advanced Gel Sanitizer 12oz/Bt"],
-  "hydrocortisone-single-packets":["1489851","Hydrocortisone Cream 0.9gm 1/32oz Foil Packet 144/Pk"],
-  "hydrogen-peroxide":["1127012","Hydrogen Peroxide Antiseptic Topical Solution 3% 8oz/Bt"],
-  "isopropyl-alcohol":["1127067","Isopropyl Alcohol Solution 70% 16oz/Bt"],
-  "mastisol":["7285234","Mastisol Liquid Adhesive 48/Bx",48],
-  "non-adherent-pads":["8900899","Telfa Ouchless Gauze Pad 2x3\" Sterile Non-Adherent"],
-  "nose-plugs":["1025455","Cotton Roll 1.5 in Non Sterile 2000/Bx",2000],
-  "ns-new-sponges":["1018748","Henry Schein Premium Rayon/Polyester Non-Woven Sponge 3x3\" 4Pl NS"],
-  "skin-lube":["1347698","Skin-Lube Ointment 2-3/4oz 1/Tb"],
-  "steri-strips":["9004315","Wound Closure Strip 1/4x3\" Opaque 150/Bx",50],
-  "sterile-4x4-gauze":["1202473","Rayon/Polyester Blend Top Sponge 4x4\" Sterile"],
-  "triple-antibiotic-single-packets":["5703128","Triple Antibiotic Topical Ointment 0.9gm Foil Packet 144/Bx"],
-  "wound-wash-saline-spray":["1315823","Simply Saline Wound Wash Topical Spray 7.4oz/Cn"],
-  "cover-roll":["9110006","Cover-Roll Stretch Bandage Elastic 6\"x10yd White Ea"],
-  "1-inch-elastikon-or-ac-plus":["1417049","ELASTIKON by Actimove Athletic Tape Cotton/Elastic 1\"x2.5yd Tan 12/Bx"],
-  "inch-tape":["1344087","950 Porous Trainers Tape Cotton/Zinc Oxide .5\"x10yd White Non-Sterile 24/Ca"],
-  "2-inch-elastikon-or-ac-plus":["1405639","ELASTIKON by Actimove Elastic Tape Cotton 2\"x2.5yd Beige 24/Ca",4],
-  "36-sam-splint":["3601359","SAM Emergency Splint Limb Aluminum/Foam 4.25x36\""],
-  "4-inch-single":["9004683","Stretch Bandage Elastic 4\"x4.5yd Tan Non-Sterile 10/Bx",10],
-  "6-inch-double":["3200045","Supra-Grip Elastic Support Bandage 6\"x11yd Tan NS 10/Bx",10],
-  "6-inch-single":["9004684","Stretch Bandage Elastic 6\"x4.5yd Tan Non-Sterile 10/Bx",10],
-  "finger-sam-splint":["7000644","SAM Emergency Splint Finger Aluminum/Foam"],
-  "horseshoe":["3730009","Horseshoe Therapy Support Ankle 12/Pk"],
-  "slings":["3758444","Procare Envelope Sling Arm One Size Cotton/Polyester 7x18\""],
-  "acetaminophen-single-dose-packs":["9004689","Henry Schein Pain Reliever Tablets 325mg Pouch 250x2/Bx"],
-  "clorox-wipes":["1399110","Super Sani-Cloth Germicidal Wipes Soft Pack 80/Pk"],
-  "gloves-large":["1372696","Carbon Air Nitrile Exam Gloves Large Black Non-Sterile 300/Bx"],
-  "gloves-medium":["5703484","Criterion N300 Nitrile Exam Gloves Medium Black Non-Sterile 300/Bx"],
-  "ibuprofen-single-dose-packs":["5700177","Ibuprofen NSAID Tablets 200mg Pouch 250x2/Bx"],
-  "scissors":["1205649","Super Pro Non-Stick Scissors 9.2x3.5x0.4\" Stainless Steel/Teflon Ea"],
-  "shark":["1345242","Shark Tape Cutter 8-1/4\" Valox Resin/Fiberglass Ea"],
-  "stop-pain-single-dose-packs":["1432175","Stopain Clinical Gel 100/Bx"],
-  "tampons":["1235145","Tampax Sanitary Tampon Regular 10/Bx"],
-  "hibiclens":["1078796","Hibiclens Pre-Op Scrub 4 oz Flip Top Bottle Unscented 4oz/Bt"],
-  "tuf-skin":["1347944","Tuf-Skin Taping Spray 4oz Colorless"],
-  "shark-blades":["1345055","Shark Steel Non-Sterile Tape Cutter Blade Standard 10/Bx"],
-  "tums-single-dose-packs":["3500009","Medique Ban-acid Antacid Tablets 750mg Berry 75x2/Bx"]
-};
-
-const mk=(sec,si)=>sec.items.map(([id,name,base,unit,note])=>({id,name,base,unit,note:note||"",sec:si,court:!!sec.court,exonly:!!sec.exonly,ice:!!(base&&base.ice)}));
+const mk=(sec,si)=>sec.items.map(([id,name,base,unit,note])=>({id,name,base,unit,note:note||"",sec:si,court:!!sec.court,ice:!!(base&&base.ice)}));
 const STD_BOX_ITEMS=BOX_SECTIONS.flatMap(mk);
 const COURT_ITEMS=mk(COURT_SECTION,"c");
-const EXONLY_ITEMS=mk(EXONLY_SECTION,"e");
-const ITEM={};[...STD_BOX_ITEMS,...COURT_ITEMS,...EXONLY_ITEMS].forEach(i=>ITEM[i.id]=i);
+const ITEM={};[...STD_BOX_ITEMS,...COURT_ITEMS].forEach(i=>ITEM[i.id]=i);
 const EXTRA_SECTION={title:"Extra supplies",extra:true};
-const EXCESS_SECTIONS=[COURT_SECTION,...BOX_SECTIONS,EXONLY_SECTION,EXTRA_SECTION];
+const EXCESS_SECTIONS=[COURT_SECTION,...BOX_SECTIONS,EXTRA_SECTION];
 const BOX_TAB_SECTIONS=[...BOX_SECTIONS,EXTRA_SECTION];
 
 const ORGS=["JVA","3Step"];
@@ -392,30 +341,15 @@ function allBoxes(){
 const boxes=(org)=>allBoxes().filter(b=>b.org===(org||curOrg()));
 const extras=()=>(L.cfg.extras||[]).map(x=>({id:x.id,name:x.name||"Unnamed item",unit:x.unit||x.note||"",base:x.inBoxes?num(x.level):0,sec:"x",extra:true,inBoxes:!!x.inBoxes}));
 const boxItemsAll=()=>[...STD_BOX_ITEMS,...extras().filter(x=>x.inBoxes)];
-const excessItemsAll=()=>[...COURT_ITEMS,...STD_BOX_ITEMS,...EXONLY_ITEMS,...extras()];
+const excessItemsAll=()=>[...COURT_ITEMS,...STD_BOX_ITEMS,...extras()];
 const itm=id=>ITEM[id]||extras().find(x=>x.id===id);
-const secTitle=it=>it.court?COURT_SECTION.title:it.exonly?EXONLY_SECTION.title:it.extra?EXTRA_SECTION.title:BOX_SECTIONS[it.sec].title;
+const secTitle=it=>it.court?COURT_SECTION.title:it.extra?EXTRA_SECTION.title:BOX_SECTIONS[it.sec].title;
 const BOX_COLORS=["#0F7C7C","#C2570A","#6B3FA0","#2E7D32","#B0306A","#8A6A00","#3D5A80","#9C3D2E"];
 const boxColor=id=>{const bx=allBoxes().find(b=>b.id===id);const i=bx?boxes(bx.org).indexOf(bx):0;return BOX_COLORS[(i<0?0:i)%BOX_COLORS.length];};
 const dot=id=>`<span class="bdot" style="background:${boxColor(id)}"></span>`;
 const boxName=id=>(allBoxes().find(b=>b.id===id)||{}).name||"Box";
 const target=it=>has(L.cfg.targets[it.id])?num(L.cfg.targets[it.id]):it.base;
-/* tournament supplies: court-size tiers (saved inside cfg.rates so old per-day rates no longer apply) */
-const TIER_NAMES=["League Play","Small","Medium","Large"];
-const TIER_DEFAULT=2; // locations without a court count use Medium
-const rates=()=>(L.cfg.rates&&typeof L.cfg.rates==="object"&&!Array.isArray(L.cfg.rates))?L.cfg.rates:(L.cfg.rates={});
-/* upper court limit of League Play, Small, Medium; anything above is Large */
-const TIER_CUTS=[14,40,80];
-const tierCuts=()=>{const c=(rates()._tiers4||{}).upTo||[];return TIER_CUTS.map((d,i)=>has(c[i])?num(c[i]):d);};
-const tierAmts=it=>{const o=(rates()[it.id]||{}).tier4;return TIER_NAMES.map((n,i)=>o&&has(o[i])?num(o[i]):it.base.tier[i]);};
-const tierOf=c=>{const k=tierCuts().findIndex(x=>c<=x);return k<0?TIER_NAMES.length-1:k;};
-function tierLabel(i){const c=tierCuts();const lo=i?c[i-1]+1:0;
-  return `${TIER_NAMES[i]} (${i===0?`up to ${c[0]}`:i===c.length?`${lo}+`:`${lo}–${c[i]}`} courts)`;}
-/* court count per AT location, null when not entered */
-const locCourts=t=>{const n=Math.max(0,Math.floor(num(t.locs)));const a=String(t.courts??"").split(",");
-  return Array.from({length:n},(_,i)=>{const v=(a[i]||"").trim();return v===""?null:num(v);});};
-function courtsText(t){const c=locCourts(t);if(!c.length)return "0 AT locations";
-  return `${c.length} AT location${c.length>1?"s":""}`+(c.some(x=>x!==null)?` (${c.map(x=>x??"?").join(", ")} courts)`:", courts not set");}
+const rate=it=>Object.assign({},it.base,L.cfg.rates[it.id]||{});
 
 /* ---------- tournaments & sessions ---------- */
 const tours=()=>L.cfg.tournaments||[];
@@ -431,7 +365,18 @@ const orgList=()=>ORGS;
 const curOrg=()=>ORGS.includes(L.org)?L.org:ORGS[0];
 const orgTours=()=>sortedTours().filter(t=>tourOrg(t)===curOrg());
 const excessLoc=(org)=>(org||curOrg())==="JVA"?"excess":"excess-3step";
-const isExcessLoc=loc=>loc==="excess"||loc==="excess-3step";
+const isExcessLoc=loc=>loc==="excess"||loc==="excess-3step"||loc.endsWith("~excess");
+const excessSessLoc=(tid,org)=>tid===LEGACY?excessLoc(org):`${tid}~excess`;
+function excessState(id,org,beforeTid){
+  org=org||curOrg();let S=sessions(org);
+  if(beforeTid){const i=S.indexOf(beforeTid);S=i<0?S:S.slice(0,i);}
+  for(let i=S.length-1;i>=0;i--){const loc=excessSessLoc(S[i],org);
+    const p=get(loc,id,"post");if(p!==null)return {v:p,tid:S[i]};
+    const q=get(loc,id,"pre");if(q!==null)return {v:q,tid:S[i]};}
+  if(!beforeTid){const old=get(excessLoc(org),id,"now");if(old!==null)return {v:old,tid:LEGACY};}
+  return null;
+}
+const excessOnHand=(id,org)=>{const s=excessState(id,org);return s?s.v:null;};
 const upcoming=(org)=>sortedTours().filter(t=>tourOrg(t)===(org||curOrg())&&isUpcoming(t));
 const LEGACY="legacy";
 const hasLegacy=(org)=>(org||curOrg())==="JVA"&&Object.keys(L.counts).some(k=>{const loc=k.split("|")[0];return !isExcessLoc(loc)&&!loc.includes("~");});
@@ -490,10 +435,10 @@ function boxState(bid,id,beforeTid,org){
 const shortfall=(bid,it)=>{const s=boxState(bid,it.id);return s?Math.max(0,target(it)-s.v):0;};
 const shortfallIn=(bid,it,org)=>{const s=boxState(bid,it.id,null,org);return s?Math.max(0,target(it)-s.v):0;};
 const uncounted=bid=>boxItemsAll().filter(it=>!boxState(bid,it.id)).length;
-/* each AT location gets its tier amount for the whole tournament; locations without a court count use Medium */
 function courtNeed(t,it){
-  const A=tierAmts(it);
-  return Math.ceil(locCourts(t).reduce((s,c)=>s+A[c===null?TIER_DEFAULT:tierOf(c)],0)-1e-9);
+  const r=rate(it);
+  if(it.ice) return num(r.days)>0?Math.ceil(num(r.rate)*num(t.days)/num(r.days)-1e-9):0;
+  return Math.ceil(num(r.rate)*num(t.days)*num(t.locs)-1e-9);
 }
 /* plan: each box counted once (first upcoming tournament it's assigned to) */
 function plan(list){
@@ -507,7 +452,6 @@ function needs(list){
   excessItemsAll().forEach(it=>{
     let n=0;
     if(it.court)list.forEach(t=>n+=courtNeed(t,it));
-    else if(it.exonly)n=0;
     else if(!it.extra||it.inBoxes)P.boxes.forEach(b=>n+=shortfallIn(b,it,orgOf(list)));
     m[it.id]=n;
   });
@@ -535,6 +479,7 @@ async function api(body){
   return res.json();
 }
 function locLabel(loc){
+  if(loc.endsWith("~excess"))return `${sessName(loc.split("~")[0])} / Excess`;
   if(loc==="excess")return "JVA Excess";
   if(loc==="excess-3step")return "3Step Excess";
   if(!loc.includes("~"))return `Earlier counts / ${boxName(loc)}`;
@@ -570,7 +515,7 @@ async function load(){
     if(lastFlushDone>started||lastCfgDone>started||flushing){setTimeout(load,800);return true;}
     const cfg=DEFAULT_CFG();Object.keys(r.config||{}).forEach(k=>cfg[k]=r.config[k]);
     Object.keys(cfgDirty).forEach(k=>{if(k in L.cfg)cfg[k]=L.cfg[k];}); // keep unsaved setup edits
-    L.cfg=cfg;loadedOnce=true;
+    L.cfg=cfg;loadedOnce=true;setTimeout(migrateExcess,0);
     const counts={};(r.counts||[]).forEach(([loc,item,phase,v])=>counts[K(loc,item,phase)]=v);
     Object.entries(L.pending).forEach(([k,p])=>{if(has(p.value))counts[k]=p.value;else delete counts[k];});
     L.counts=counts;
@@ -634,10 +579,12 @@ function renderTabs(){
     `<button role="tab" data-tab="excess" aria-selected="${L.tab==="excess"}">Excess</button><span class="sep"></span>`+
     `<button role="tab" data-tab="restock" aria-selected="${L.tab==="restock"}">Restock</button>`+
     `<button role="tab" data-tab="setup" aria-selected="${L.tab==="setup"}">Setup</button>`;
-  el.querySelectorAll("button").forEach(b=>b.onclick=()=>{L.tab=b.dataset.tab;persist();render();window.scrollTo({top:0});});
+  el.querySelectorAll("button").forEach(b=>b.onclick=()=>{if(L.tab!==b.dataset.tab)query="";L.tab=b.dataset.tab;persist();render();window.scrollTo({top:0});});
 }
 function renderCtx(){
   const el=$("#ctx");
+  if(L.tab==="excess"&&curTour()){const ph=L.phase.excess||"post";el.hidden=false;el.style.background="#46525F";
+    el.innerHTML=`<div class="ctx-in"><b>${curOrg()} Excess</b><span>${esc(sessName(curTour()))}, ${ph}-tournament</span></div>`;return;}
   if(!L.tab.startsWith("box:")||!curTour()){el.hidden=true;return;}
   const id=L.tab.slice(4),ph=L.phase[id]||"post";
   el.hidden=false;el.style.background=boxColor(id);
@@ -651,10 +598,21 @@ function ensureBox3(){
 function renderOrgBar(){
   const el=$("#orgbar");
   el.innerHTML=ORGS.map(o=>`<button data-o="${o}" aria-pressed="${o===curOrg()}">${o}</button>`).join("");
-  el.querySelectorAll("button").forEach(b=>b.onclick=()=>{if(b.dataset.o===curOrg())return;L.org=b.dataset.o;L.plan="all";L.openEv="";persist();render();window.scrollTo({top:0});});
+  el.querySelectorAll("button").forEach(b=>b.onclick=()=>{if(b.dataset.o===curOrg())return;query="";L.org=b.dataset.o;L.plan="all";L.openEv="";persist();render();window.scrollTo({top:0});});
+}
+function migrateExcess(){
+  if(!LOCAL&&!loadedOnce)return;
+  const old=Object.keys(L.counts).filter(k=>k.startsWith("excess|")&&k.endsWith("|now"));
+  if(!old.length)return;
+  const R=sortedTours().filter(t=>tourOrg(t)==="JVA"&&t.name==="The Reckoning");
+  if(!R.length)return;
+  const r=R.find(isUpcoming)||[...R].reverse().find(t=>t.date)||R[0];
+  old.forEach(k=>{const item=k.split("|")[1];const v=L.counts[k];
+    if(get(`${r.id}~excess`,item,"pre")===null)setCount(`${r.id}~excess`,item,"pre",v);
+    setCount("excess",item,"now",null);});
 }
 function render(){
-  ensureBox3();migrateOrgs();renderOrgBar();
+  ensureBox3();migrateOrgs();migrateExcess();renderOrgBar();
   renderTabs();renderCtx();
   const t=L.tab;
   if(t.startsWith("box:"))renderBox(t.slice(4));
@@ -676,13 +634,13 @@ function softRefresh(){
 function rowHTML(it,withTarget){
   const t=target(it);
   return `<div class="item" data-id="${esc(it.id)}">
-    <div><span class="name">${esc(it.name)}${(()=>{const bits=[it.note,!withTarget&&unitPlural(it)?`count in ${unitPlural(it)}`:""].filter(Boolean);return bits.length?`<span class="note">${esc(bits.join(", "))}</span>`:"";})()}</span><div class="status"></div></div>
+    <div><span class="name">${esc(it.name)}${(()=>{const bits=[it.note,!withTarget&&unitPlural(it)?`count in ${unitPlural(it)}`:""].filter(Boolean);return bits.length?`<span class="note">${esc(bits.join(", "))}</span>`:"";})()}</span><div class="status"></div><button class="clr" hidden aria-label="Clear ${esc(it.name)} count">Clear count</button></div>
     <div class="ctrl">
-      ${withTarget?`<button class="target" tabindex="-1" aria-label="Mark ${esc(it.name)} full"></button>`:""}
+      ${withTarget?`<button class="target" aria-label="Mark ${esc(it.name)} full"></button>`:""}
       <div class="step">
-        <button data-d="-1" tabindex="-1" aria-label="One less ${esc(it.name)}">−</button>
+        <button data-d="-1" aria-label="One less ${esc(it.name)}">−</button>
         <input type="number" inputmode="decimal" min="0" step="any" placeholder="–" aria-label="${esc(it.name)} count">
-        <button data-d="1" tabindex="-1" aria-label="One more ${esc(it.name)}">+</button>
+        <button data-d="1" aria-label="One more ${esc(it.name)}">+</button>
       </div>
     </div>
     ${it.ice&&!withTarget?`<div class="extra">Notes<input type="text" data-comment placeholder="e.g., extra for outdoor courts"></div>`:""}
@@ -700,6 +658,7 @@ function wireRows(loc,phaseFn){
       setCount(loc,id,phaseFn(),fmt(n));updateRows();
     });
     inp.oninput=()=>{setCount(loc,id,phaseFn(),inp.value===""?null:Math.max(0,num(inp.value)));updateRows(row);};
+    row.querySelector(".clr").onclick=()=>{setCount(loc,id,phaseFn(),null);updateRows();toast(`Cleared ${itm(id).name}`);};
     const tb=row.querySelector(".target");
     if(tb)tb.onclick=()=>{setCount(loc,id,phaseFn(),target(itm(id)));updateRows();};
     const cm=row.querySelector("[data-comment]");
@@ -712,6 +671,7 @@ function updateRows(skipRow){
   const G=isExcessLoc(loc)?nextGroup():[];
   const N=isExcessLoc(loc)?needs(G):null;
   const [tid,bid]=loc.includes("~")?loc.split("~"):[LEGACY,loc];
+  const ql=query.trim().toLowerCase();
   let ok=0,fl=0,todo=0;const secFlags={};
   main().querySelectorAll(".item").forEach(row=>{
     const it=itm(row.dataset.id);if(!it)return;const inp=row.querySelector(".step input");
@@ -719,10 +679,14 @@ function updateRows(skipRow){
     if(row!==skipRow&&document.activeElement!==inp)inp.value=c===null?"":c;
     let k="todo",msg="";
     if(isExcessLoc(loc)){
-      const need=N[it.id]||0;
-      if(c===null){msg=need?`${groupNames(G)} need${G.length>1?"":"s"} ${qty(it,need)}`:"";}
-      else if(c<need){k="flag";msg=`Short ${qty(it,need-c)} (need ${fmt(need)})`;}
-      else{k="ok";msg=need?`Covers the ${fmt(need)} needed`:"Counted";}
+      const need=N[it.id]||0;const bits=[];
+      if(c===null){if(need)bits.push(`${groupNames(G)} need${G.length>1?"":"s"} ${qty(it,need)}`);}
+      else if(c<need){k="flag";bits.push(`Short ${qty(it,need-c)} (need ${fmt(need)})`);}
+      else{k="ok";bits.push(need?`Covers the ${fmt(need)} needed`:"Counted");}
+      const pre=get(loc,it.id,"pre");
+      if(phase==="post"&&pre!==null){bits.push(`started with ${fmt(pre)}`);if(c!==null)bits.push(`used ${fmt(Math.max(0,pre-c))}`);}
+      if(phase==="pre"&&c===null&&tid!==LEGACY){const prev=excessState(it.id,curOrg(),tid);if(prev)bits.push(`last count ${fmt(prev.v)} after ${sessName(prev.tid)}`);}
+      msg=bits.join(", ");if(msg)msg=msg[0].toUpperCase()+msg.slice(1);
     }else{
       const t=target(it);
       const tbn=row.querySelector(".target");
@@ -735,13 +699,15 @@ function updateRows(skipRow){
     }
     row.classList.remove("ok","flag");if(k!=="todo")row.classList.add(k);
     row.querySelector(".status").textContent=msg;
-    row.classList.toggle("hide",L.filter!=="all"&&k!==L.filter);
+    row.querySelector(".clr").hidden=c===null;
+    const qm=!ql||(it.name+" "+(it.note||"")+" "+secTitle(it)).toLowerCase().includes(ql);
+    row.classList.toggle("hide",!qm||(L.filter!=="all"&&k!==L.filter));
     const sk=row.closest("section").dataset.s;
     if(k==="ok")ok++;else if(k==="flag"){fl++;secFlags[sk]=(secFlags[sk]||0)+1;}else todo++;
   });
   main().querySelectorAll("section.grp").forEach(s=>{
     const f=secFlags[s.dataset.s]||0;s.querySelector(".grp-h small").textContent=f?`${f} ${isExcessLoc(loc)?"short":"to restock"}`:"";
-    s.style.display=(s.classList.contains("extra-grp")&&L.filter==="all")||s.querySelectorAll(".item:not(.hide)").length?"":"none";
+    s.style.display=(s.classList.contains("extra-grp")&&L.filter==="all"&&!ql)||s.querySelectorAll(".item:not(.hide)").length?"":"none";
   });
   const total=Math.max(1,ok+fl+todo);
   const tl=$("#tally");if(tl)tl.textContent=`${ok+fl} of ${ok+fl+todo} counted, ${fl} ${isExcessLoc(loc)?"short":"to restock"}`;
@@ -749,11 +715,20 @@ function updateRows(skipRow){
 }
 function sectionsHTML(sections,withTarget){
   return sections.map((sec,i)=>{
-    const list=sec.court?COURT_ITEMS:sec.exonly?EXONLY_ITEMS:sec.extra?(withTarget?extras().filter(x=>x.inBoxes):extras()):STD_BOX_ITEMS.filter(x=>x.sec===BOX_SECTIONS.indexOf(sec));
+    const list=sec.court?COURT_ITEMS:sec.extra?(withTarget?extras().filter(x=>x.inBoxes):extras()):STD_BOX_ITEMS.filter(x=>x.sec===BOX_SECTIONS.indexOf(sec));
     return `<section class="grp${sec.extra?" extra-grp":""}" data-s="${i}"><div class="grp-h">${esc(sec.title)}<small></small></div>
     ${list.length?`<div class="list">${list.map(it=>rowHTML(it,withTarget&&!(it.extra&&!it.base))).join("")}</div>`:""}
     ${sec.extra?`<p class="hint" style="margin:${list.length?"8px":"0"} 4px 8px">${withTarget?"Items added as “kept in every box” show here.":"Anything not on the standard list."}</p><button class="btn ghost" style="width:100%" data-add-extra>Add extra supply</button>`:""}
     </section>`;}).join("");
+}
+let query="";
+function searchHTML(ph){return `<div class="search"><input type="search" id="q" placeholder="${esc(ph)}" value="${esc(query)}" autocomplete="off" enterkeyhint="search" aria-label="${esc(ph)}"></div>`;}
+function wireSearch(fn){const el=$("#q");if(!el)return;el.oninput=()=>{query=el.value;fn();};}
+function applySearch(){
+  const ql=query.trim().toLowerCase();
+  main().querySelectorAll("[data-q]").forEach(el=>el.classList.toggle("qhide",!!ql&&!el.dataset.q.toLowerCase().includes(ql)));
+  main().querySelectorAll("[data-qgroup]").forEach(g=>g.classList.toggle("qhide",!!ql&&!g.querySelector("[data-q]:not(.qhide)")));
+  const none=$("#q-none");if(none)none.hidden=!ql||!!main().querySelector("[data-q]:not(.qhide)");
 }
 function chipsHTML(flagLabel){
   return `<div class="chips" role="group" aria-label="Show">
@@ -761,6 +736,17 @@ function chipsHTML(flagLabel){
 }
 function wireChips(){main().querySelectorAll(".chips button").forEach(b=>b.onclick=()=>{L.filter=b.dataset.f;persist();
   main().querySelectorAll(".chips button").forEach(x=>x.setAttribute("aria-pressed",x===b));updateRows();});}
+
+/* ---------- clearing ---------- */
+const phaseName=p=>p==="pre"?"pre-tournament":"post-tournament";
+async function clearPhase(loc,phase,what,where){
+  const keys=Object.keys(L.counts).filter(k=>k.startsWith(loc+"|")&&k.endsWith("|"+phase));
+  if(!keys.length){toast(`No ${phaseName(phase)} counts to clear`);return;}
+  if(!await confirmDlg(`Clear ${what}’s ${phaseName(phase)} count?`,
+    `This erases ${keys.length} ${phaseName(phase)} count${keys.length>1?"s":""} for ${what} at ${where}, for everyone. The ${phaseName(phase==="pre"?"post":"pre")} count and other boxes aren’t affected.`,"Clear counts"))return;
+  keys.forEach(k=>{const item=k.split("|")[1];setCount(loc,item,phase,null);});
+  updateRows();toast("Counts cleared");
+}
 
 /* ---------- box tab ---------- */
 function renderBox(id){
@@ -778,7 +764,7 @@ function renderBox(id){
   const loc=sessLoc(tid,id);
   main().innerHTML=`<div class="card boxcard" style="--bc:${boxColor(id)}">
       <label class="field tsel">${curOrg()} tournament<select id="tsel">${tourOptions(tid,true,curOrg())}</select></label>
-      ${t?`<p class="sub" style="margin-top:6px">${[t.date?fmtDate(t.date):"Date not set",courtsText(t),`${num(t.days)} days`].join(", ")}</p>`:""}
+      ${t?`<p class="sub" style="margin-top:6px">${[t.date?fmtDate(t.date):"Date not set",`${num(t.locs)} AT locations`,`${num(t.days)} days`].join(", ")}</p>`:""}
       <div class="boxtitle" style="margin-top:14px">${dot(id)}<h2>${esc(boxName(id))}</h2></div>
       <div class="seg" role="group" aria-label="Count type">
         <button data-p="pre" aria-pressed="${ph==="pre"}">Pre-tournament</button>
@@ -788,18 +774,13 @@ function renderBox(id){
       <div class="meter" id="meter"><i class="m-ok"></i><i class="m-flag"></i></div>
       <p class="hint" id="tally"></p>
       ${chipsHTML("Restock")}
-      <div class="row-between" style="margin-top:6px"><span></span><button class="link danger" id="newcount">Clear this box’s counts</button></div>
+      ${searchHTML("Search this box")}
+      <div class="row-between" style="margin-top:6px"><span></span><button class="link danger" id="newcount">Clear this box’s ${ph}-tournament count</button></div>
     </div>${sectionsHTML(BOX_TAB_SECTIONS,true)}`;
   $("#tsel").onchange=e=>{pickTour(e.target.value);render();};
   main().querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{L.phase[id]=b.dataset.p;persist();renderCtx();renderBox(id);});
-  $("#newcount").onclick=async()=>{
-    if(!await confirmDlg(`Clear ${boxName(id)} for ${sessName(tid)}?`,"This erases this box’s pre- and post-tournament counts for this tournament only, for everyone. Other tournaments and boxes aren’t affected.","Clear counts"))return;
-    if(!LOCAL){try{const r=await api({action:"clear",loc});if(!r.ok)throw r;}catch(e){toast("Couldn’t clear while offline. Try again with a connection.");return;}}
-    Object.keys(L.counts).forEach(k=>{if(k.startsWith(loc+"|"))delete L.counts[k];});
-    Object.keys(L.pending).forEach(k=>{if(k.startsWith(loc+"|"))delete L.pending[k];});
-    persist();render();toast("Counts cleared");
-  };
-  wireChips();wireRows(loc,()=>L.phase[id]||"post");wireAddExtra(true);updateRows();
+  $("#newcount").onclick=()=>clearPhase(loc,ph,boxName(id),sessName(tid));
+  wireChips();wireRows(loc,()=>L.phase[id]||"post");wireAddExtra(true);wireSearch(()=>updateRows());updateRows();
 }
 /* ---------- extra supplies ---------- */
 function wireAddExtra(fromBox){
@@ -824,8 +805,8 @@ $("#x-save").onclick=async()=>{
 };
 function extrasSetupHTML(){
   const X=L.cfg.extras||[];
-  return `<div class="card"><h3>Extra supplies</h3><p class="sub">Items added beyond the standard list. Anyone counting can add them from a box or the Excess tab.</p>
-    ${X.length?X.map(x=>`<div class="rate" data-x="${esc(x.id)}">
+  return `<div class="card" data-qgroup><h3>Extra supplies</h3><p class="sub">Items added beyond the standard list. Anyone counting can add them from a box or the Excess tab.</p>
+    ${X.length?X.map(x=>`<div class="rate" data-x="${esc(x.id)}" data-q="${esc(x.name)}">
       <div class="grid2"><label class="field">Item<input data-xk="name" value="${esc(x.name)}"></label><label class="field">Unit<input data-xk="note" value="${esc(x.note)}" placeholder="e.g., box"></label></div>
       <div class="row-between" style="margin-top:8px">
         <label class="rl" style="margin:0"><input type="checkbox" data-xk="inBoxes" ${x.inBoxes?"checked":""} style="width:18px;height:18px;accent-color:var(--court)"> In every box, full box has <input data-xk="level" type="number" inputmode="decimal" min="0" step="any" value="${esc(x.level)}"></label>
@@ -850,24 +831,41 @@ function wireExtrasSetup(){
 
 /* ---------- excess tab ---------- */
 function renderExcess(){
-  main().innerHTML=`<div class="card"><h2>${curOrg()} excess inventory</h2>
-    <p class="sub">Everything for ${curOrg()} not packed in a box, including tournament supplies like tape, prewrap, and ice bags.</p>
-    <p class="hint">${(()=>{const G=nextGroup();return G.length?`Needs shown are for the next tournament${G.length>1?"s":""}: ${esc(G.map(tourLabel).join(" and "))}.`:"No upcoming tournaments with dates, so no needs are shown.";})()}</p>
+  const tid=curTour();
+  if(!tid){rowCtx=null;
+    main().innerHTML=`<div class="card"><h2>${curOrg()} excess inventory</h2><p class="sub">Excess counts are logged by tournament. ${isAdmin()?"Add your tournaments in Setup to start logging.":"Ask your admin to add tournaments in Setup."}</p></div>`;return;}
+  const ph=L.phase.excess||"post";const org=curOrg();const loc=excessSessLoc(tid,org);
+  const G=nextGroup();
+  main().innerHTML=`<div class="card">
+    <label class="field tsel">${org} tournament<select id="tsel">${tourOptions(tid,true,org)}</select></label>
+    <h2 style="margin-top:14px">${org} excess inventory</h2>
+    <p class="sub">Everything for ${org} not packed in a box, including tournament supplies like tape, prewrap, and ice bags.</p>
+    <div class="seg" role="group" aria-label="Count type">
+      <button data-p="pre" aria-pressed="${ph==="pre"}">Pre-tournament</button>
+      <button data-p="post" aria-pressed="${ph==="post"}">Post-tournament</button>
+    </div>
+    <p class="hint">${G.length?`Needs shown are for the next tournament${G.length>1?"s":""}: ${esc(G.map(tourLabel).join(" and "))}.`:"No upcoming tournaments with dates, so no needs are shown."}</p>
     <div class="meter" id="meter"><i class="m-ok"></i><i class="m-flag"></i></div><p class="hint" id="tally"></p>
-    ${chipsHTML("Short")}</div>${sectionsHTML(EXCESS_SECTIONS,false)}`;
-  wireChips();wireRows(excessLoc(),()=>"now");wireAddExtra(false);updateRows();
+    ${chipsHTML("Short")}
+    ${searchHTML("Search excess supplies")}
+    <div class="row-between" style="margin-top:6px"><span></span><button class="link danger" id="newcount">Clear the excess ${ph}-tournament count</button></div>
+  </div>${sectionsHTML(EXCESS_SECTIONS,false)}`;
+  $("#tsel").onchange=e=>{pickTour(e.target.value);render();};
+  main().querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{L.phase.excess=b.dataset.p;persist();renderCtx();renderExcess();});
+  $("#newcount").onclick=()=>clearPhase(loc,ph,`${org} excess`,sessName(tid));
+  wireChips();wireRows(loc,()=>L.phase.excess||"post");wireAddExtra(false);wireSearch(()=>updateRows());updateRows();
 }
 
 /* ---------- restock tab ---------- */
 function orderRows(list){
   const N=needs(list);
-  const xl=excessLoc(orgOf(list));
-  return excessItemsAll().map(it=>{const need=N[it.id]||0;const ex=get(xl,it.id,"now");
+  const org=orgOf(list);
+  return excessItemsAll().map(it=>{const need=N[it.id]||0;const ex=excessOnHand(it.id,org);
     return {it,need,ex,order:Math.max(0,need-(ex||0))};}).filter(r=>r.need>0);
 }
 function shortList(bid){
   const need=boxItemsAll().map(it=>[it,shortfall(bid,it)]).filter(([,n])=>n>0);
-  return need.length?`<ul class="mini">${need.map(([it,n])=>`<li><span>${esc(it.name)}</span><b>${esc(qty(it,n))}</b></li>`).join("")}</ul>`:`<p class="empty">Nothing to restock.</p>`;
+  return need.length?`<ul class="mini">${need.map(([it,n])=>`<li data-q="${esc(it.name)}"><span>${esc(it.name)}</span><b>${esc(qty(it,n))}</b></li>`).join("")}</ul>`:`<p class="empty">Nothing to restock.</p>`;
 }
 function lastCountNote(bid){
   let last=null;sessions().forEach(s=>{if(boxItemsAll().some(it=>get(sessLoc(s,bid),it.id,"pre")!==null||get(sessLoc(s,bid),it.id,"post")!==null))last=s;});
@@ -878,21 +876,20 @@ function renderRestock(){
   const list=planList();
   const P=plan(list);
   let h=`<div class="card"><h2>Restock</h2><p class="sub">What upcoming ${curOrg()} tournaments need, and what ${curOrg()} excess inventory can’t cover.</p>
+    ${UP.length?searchHTML("Search restock items"):""}<p class="empty" id="q-none" hidden>No matching items.</p>
     ${UP.length?`<label class="field" style="margin-top:12px">Plan for<select id="plan"><option value="all">All upcoming ${curOrg()} tournaments</option>${UP.map(t=>`<option value="${esc(t.id)}" ${L.plan===t.id?"selected":""}>${esc(orgLabel(t))}</option>`).join("")}</select></label>`:""}</div>`;
   if(!UP.length)h+=`<div class="card"><p class="empty">No upcoming ${curOrg()} tournaments. Set dates for your tournaments in Setup and assign boxes.</p></div>`;
   P.perTour.forEach(({t,boxes:bx,dup})=>{
     h+=`<div class="card accent"><h3>${esc(t.name||"Untitled tournament")}</h3>
-      <p class="sub">${[t.org,fmtDate(t.date),courtsText(t),`${num(t.days)} days`].filter(Boolean).join(", ")}</p>`;
+      <p class="sub">${[t.org,fmtDate(t.date),`${num(t.locs)} AT locations`,`${num(t.days)} days`].filter(Boolean).join(", ")}</p>`;
     if(!bx.length&&!dup.length)h+=`<p class="warn">No boxes assigned.</p>`;
     bx.forEach(b=>{const u=uncounted(b);
       h+=`<p class="bhead">${dot(b)}${esc(boxName(b))}</p><p class="hint" style="margin:2px 0 0">${lastCountNote(b)}</p>`+shortList(b)+(u?`<p class="warn">${u} item${u>1?"s":""} never counted</p>`:"");});
     dup.forEach(b=>{h+=`<p class="bhead">${dot(b)}${esc(boxName(b))}</p><p class="hint" style="margin:2px 0 0">Restocked for an earlier tournament in this plan.</p>`;});
     const cn=COURT_ITEMS.map(it=>[it,courtNeed(t,it)]).filter(([,n])=>n>0);
     h+=`<p class="bhead">Tournament supplies</p>`+
-      (cn.length?`<ul class="mini">${cn.map(([it,n])=>`<li><span>${esc(it.name)}</span><b>${esc(qty(it,n))}</b></li>`).join("")}</ul>`
-        :`<p class="empty">Add AT locations and court counts in Setup.</p>`);
-    const unset=locCourts(t).filter(c=>c===null).length;
-    if(unset)h+=`<p class="warn">Court count not set for ${unset} location${unset>1?"s":""}, so ${unset>1?"they use":"it uses"} Medium amounts. Set courts in Setup.</p>`;
+      (cn.length?`<ul class="mini">${cn.map(([it,n])=>`<li data-q="${esc(it.name)}"><span>${esc(it.name)}</span><b>${esc(qty(it,n))}</b></li>`).join("")}</ul>`
+        :`<p class="empty">Add AT locations and days in Setup.</p>`);
     if(L.cfg.comments["ice-bags"])h+=`<p class="hint">Ice bags: ${esc(L.cfg.comments["ice-bags"])}</p>`;
     h+=`</div>`;
   });
@@ -901,22 +898,10 @@ function renderRestock(){
   if(UP.length){
     h+=`<div class="card"><h3>Order list</h3><p class="sub">Total needed${list.length===1?` for ${esc(list[0].name||"this tournament")}`:` for all upcoming ${curOrg()} tournaments`}, minus ${curOrg()} excess on hand.</p>`+
       (O.length?`<div class="tw"><table class="t"><thead><tr><th>Item</th><th class="n">Need</th><th class="n">Excess</th><th class="n">Order</th></tr></thead><tbody>${
-        O.map(r=>`<tr><td>${esc(r.it.name)}<span class="note">${esc([HS[r.it.id]?"#"+HS[r.it.id][0]:"",unitPlural(r.it)].filter(Boolean).join(" · "))}</span></td><td class="n">${fmt(r.need)}</td><td class="n">${r.ex===null?"–":r.ex}</td><td class="n ${r.order?"hot":""}">${fmt(r.order)}</td></tr>`).join("")}</tbody></table></div>`
+        O.map(r=>`<tr data-q="${esc(r.it.name)}"><td>${esc(r.it.name)}${unitPlural(r.it)?`<span class="note">${esc(unitPlural(r.it))}</span>`:""}</td><td class="n">${fmt(r.need)}</td><td class="n">${r.ex===null?"–":r.ex}</td><td class="n ${r.order?"hot":""}">${fmt(r.order)}</td></tr>`).join("")}</tbody></table></div>`
         :`<p class="empty">Nothing needed yet.</p>`)+
       (exTodo?`<p class="warn">${exTodo} needed item${exTodo>1?"s":""} not counted in excess yet</p>`:"")+
       `<div class="row-between" style="margin-top:12px"><button class="btn ghost sm" id="copy">Copy order list</button></div></div>`;
-  }
-  const NG=nextGroup();
-  if(NG.length){
-    const R=hsRows(NG),ok=R.filter(r=>r.code),miss=R.filter(r=>!r.code);
-    h+=`<div class="card accent"><h3>Henry Schein order</h3><p class="sub">For the next tournament${NG.length>1?"s":""}: ${esc(NG.map(orgLabel).join(" and "))}. Quantities are what’s needed minus ${curOrg()} excess on hand, rounded up to Henry Schein selling units.</p>`+
-      (ok.length?`<div class="tw"><table class="t"><thead><tr><th>Item #</th><th>Item</th><th class="n">Qty</th></tr></thead><tbody>${
-        ok.map(r=>`<tr><td>${esc(r.code)}</td><td>${esc(r.it.name)}<span class="note">${esc(r.desc)}</span></td><td class="n hot">${r.qty}</td></tr>`).join("")}</tbody></table></div>`
-        :`<p class="empty">Nothing to order from Henry Schein.</p>`)+
-      (miss.length?`<p class="warn">No Henry Schein item number for: ${esc(miss.map(r=>`${r.it.name} (${qty(r.it,r.order)})`).join(", "))}</p>`:"")+
-      (R.some(r=>r.ex===null)?`<p class="warn">Count ${curOrg()} excess first so quantities don’t include what you already have.</p>`:"")+
-      `<div class="row-between" style="margin-top:12px;justify-content:flex-start"><button class="btn primary sm" id="hs-csv" ${ok.length?"":"disabled"}>Download order file (CSV)</button><button class="btn ghost sm" id="hs-copy" ${ok.length?"":"disabled"}>Copy item numbers</button></div>
-      <p class="hint">Upload the file in Henry Schein’s Quick Order / order upload. Columns are Item Code, Quantity, Description.</p></div>`;
   }
   const others=boxes().filter(b=>!plan(upcoming()).boxes.includes(b.id));
   if(others.length){
@@ -926,27 +911,16 @@ function renderRestock(){
   }
   main().innerHTML=h;
   if($("#plan"))$("#plan").onchange=e=>{L.plan=e.target.value;persist();renderRestock();};
+  wireSearch(applySearch);applySearch();
   if($("#copy"))$("#copy").onclick=()=>copyText(orderText());
-  if($("#hs-csv"))$("#hs-csv").onclick=()=>{try{const G=nextGroup();saveFile(`henry-schein-order-${slug(groupNames(G))}-${stamp()}.csv`,hsCSV(G),"text/csv;charset=utf-8");}catch(e){toast("Couldn’t build the order file");}};
-  if($("#hs-copy"))$("#hs-copy").onclick=()=>copyText(hsRows(nextGroup()).filter(r=>r.code).map(r=>`${r.code}\t${r.qty}`).join("\n"));
 }
-/* Henry Schein order lines: inventory units converted to Henry Schein selling units */
-function hsRows(list){
-  return orderRows(list).filter(r=>r.order>0).map(r=>{const h=HS[r.it.id];if(!h)return Object.assign({code:null},r);
-    const per=h[2]||1;return Object.assign({code:h[0],desc:h[1],qty:Math.ceil(r.order/per-1e-9)},r);});
-}
-function hsCSV(list){
-  const o=[["Item Code","Quantity","Description"],...hsRows(list).filter(r=>r.code).map(r=>[r.code,r.qty,r.desc])];
-  return o.map(r=>r.map(csvCell).join(",")).join("\r\n");
-}
-const slug=n=>String(n||"").replace(/[^a-z0-9]+/gi,"-").replace(/^-|-$/g,"").toLowerCase()||"order";
 function orderText(){
   const list=planList();const lines=[`${curOrg()} order list`];
   plan(list).perTour.forEach(({t,boxes:bx})=>lines.push(`${orgLabel(t)}: ${bx.map(boxName).join(", ")||"no boxes"}`));
   lines.push("");
   const O=orderRows(list).filter(r=>r.order>0);
   if(!O.length)lines.push("Nothing to order.");
-  O.forEach(r=>lines.push(`${r.it.name}${HS[r.it.id]?` (#${HS[r.it.id][0]})`:""}: ${qty(r.it,r.order)}`));
+  O.forEach(r=>lines.push(`${r.it.name}: ${qty(r.it,r.order)}`));
   return lines.join("\n");
 }
 async function copyText(t){
@@ -968,8 +942,6 @@ function tourCard(t){
       <label class="field">Days<input data-k="days" type="number" inputmode="numeric" min="0" value="${esc(t.days)}" placeholder="0"></label>
     </div>
     ${t.name==="World Challenge"?`<p class="hint">Possibly 4 AT locations.</p>`:""}
-    ${locCourts(t).length?`<p class="hint" style="margin-top:12px">Courts at each AT location</p><div class="grid3" style="margin-top:4px">${locCourts(t).map((c,i)=>
-      `<label class="field">Location ${i+1}<input data-court="${i}" type="number" inputmode="numeric" min="0" value="${c??""}" placeholder="Courts"></label>`).join("")}</div>`:""}
     <p class="hint" style="margin-top:12px">Boxes going to this tournament</p>
     <div class="boxpick">${boxes().map(b=>{const mine=(t.boxes||[]).includes(b.id);
       return `<label${mine?` class="on" style="--bc:${boxColor(b.id)}"`:""}><input type="checkbox" data-box="${b.id}" ${mine?"checked":""}>${dot(b.id)}${esc(b.name)}</label>`;}).join("")||`<span class="empty">Add a box first.</span>`}</div>
@@ -993,19 +965,7 @@ async function clearLocs(locs){
   if(LOCAL)return true;
   try{for(const loc of locs){const r=await api({action:"clear",loc});if(!r.ok)throw r;}return true;}catch(e){return false;}
 }
-/* remember which field had focus so a redraw doesn't kick you out of it */
-function focusKey(el){
-  if(!el||!main().contains(el))return null;
-  const own=["data-k","data-court","data-box","data-cut","data-tier","data-lvl","data-xk"].find(a=>el.hasAttribute(a));
-  let sel=el.id?"#"+CSS.escape(el.id):own?`[${own}="${CSS.escape(el.getAttribute(own))}"]`:el.classList.contains("bname")?".bname":null;
-  if(!sel)return null;
-  const box=el.parentElement&&el.parentElement.closest("[data-t],[data-r],[data-b],[data-x]");
-  if(box){const a=["data-t","data-r","data-b","data-x"].find(x=>box.hasAttribute(x));sel=`[${a}="${CSS.escape(box.getAttribute(a))}"] ${sel}`;}
-  return sel;
-}
-const laterSetup=()=>setTimeout(()=>{if(L.tab==="setup")renderSetup();},0);
 function renderSetup(){
-  const fk=focusKey(document.activeElement);
   const A=isAdmin();
   let h=`<div class="card"><h2>Setup</h2>
     <div class="grid2" style="margin-top:10px"><label class="field wide">Your name<input id="s-name" value="${esc(L.name)}" placeholder="Shown with your counts"></label></div>
@@ -1016,41 +976,36 @@ function renderSetup(){
     h+=`<div class="card"><h3>Admin setup</h3><p class="sub">Tournaments, boxes, and box contents are locked. Enter the admin code to change them.</p>
       <div class="row-between" style="margin-top:10px;flex-wrap:nowrap"><input id="s-admin" type="password" ${inputStyle} placeholder="Admin code" autocomplete="off"><button class="btn primary sm" id="s-unlock">Unlock</button></div>
       <p class="err" id="s-err"></p></div>`;
-    h+=`<div class="card"><h3>Upcoming ${curOrg()} tournaments</h3>${upcoming().length?`<ul class="mini">${upcoming().map(t=>`<li><span>${esc(orgLabel(t))}</span><span>${(t.boxes||[]).map(b=>dot(b)+esc(boxName(b))).join(", ")||"No boxes"}</span></li>`).join("")}</ul>`:`<p class="empty">None with dates yet.</p>`}</div>`;
+    h+=`<div class="card"><h3>Upcoming ${curOrg()} tournaments</h3>${upcoming().length?`<ul class="mini">${upcoming().map(t=>`<li data-q="${esc(t.name)}"><span>${esc(orgLabel(t))}</span><span>${(t.boxes||[]).map(b=>dot(b)+esc(boxName(b))).join(", ")||"No boxes"}</span></li>`).join("")}</ul>`:`<p class="empty">None with dates yet.</p>`}</div>`;
   }else{
     if(needsSeed())seedTournaments();
     const org=curOrg();
-    h+=`<div class="card"><h3>${org} tournaments</h3>
+    h+=`<div class="card">${searchHTML("Search tournaments, boxes, and supplies")}<p class="empty" id="q-none" hidden>Nothing matches.</p></div>`;
+    h+=`<div class="card" data-qgroup><h3>${org} tournaments</h3>
       <p class="sub">Every date shows up in the logging dropdowns. Counts are kept separately for each date, so you can look back anytime.</p>
-      <div class="events">${eventGroups(org).map(g=>`<details class="ev" data-ev="${esc(g.name)}" ${L.openEv===org+"|"+g.name?"open":""}>
+      <div class="events">${eventGroups(org).map(g=>`<details class="ev" data-ev="${esc(g.name)}" data-q="${esc(g.name)}" ${L.openEv===org+"|"+g.name?"open":""}>
         <summary><span class="ev-n">${esc(g.name)}</span><span class="ev-s">${esc(eventSummary(g.list))}</span></summary>
         ${g.list.map(tourCard).join("")}
         <button class="btn ghost sm" style="width:100%" data-add-date="${esc(g.name)}">${g.list.length?"Add another date":"Add a date"}</button>
       </details>`).join("")}</div>
       <button class="link" id="add-custom" style="margin-top:8px">Add a different ${org} tournament</button>
     </div>`;
-    h+=`<div class="card"><div class="row-between"><h3 style="margin:0">${curOrg()} boxes</h3><button class="btn primary sm" id="add-b">Add box</button></div>
+    h+=`<div class="card" data-qgroup><div class="row-between"><h3 style="margin:0">${curOrg()} boxes</h3><button class="btn primary sm" id="add-b">Add box</button></div>
       <p class="hint">${curOrg()} boxes are counted only with ${curOrg()} tournaments. Every box starts with the same contents.</p>
-      ${boxes().map(b=>`<div class="row-between" style="margin-top:10px;flex-wrap:nowrap;gap:8px" data-b="${b.id}">${dot(b.id)}
+      ${boxes().map(b=>`<div class="row-between" style="margin-top:10px;flex-wrap:nowrap;gap:8px" data-b="${b.id}" data-q="${esc(b.name)}">${dot(b.id)}
         <input class="bname" value="${esc(b.name)}" ${inputStyle}>
         <button class="link danger" data-del-b>Remove</button></div>`).join("")}</div>`;
-    const cuts=tierCuts();
-    h+=`<div class="card"><h3>Tournament supplies</h3><p class="sub">Each AT location gets a set amount for the whole tournament, based on how many courts it covers. Enter the courts for each location on the tournament above. A location with no court count uses Medium.</p>
-      <p class="hint" style="margin-top:10px">Most courts in each size (anything more is Large)</p>
-      <div class="grid3" style="margin-top:4px">${cuts.map((c,i)=>`<label class="field">${TIER_NAMES[i]}<input data-cut="${i}" type="number" inputmode="numeric" min="0" value="${c}"></label>`).join("")}</div>
-      <p class="hint" id="tier-hint">${esc(TIER_NAMES.map((n,i)=>tierLabel(i)).join(" · "))}</p>
-      <div class="tw" style="margin-top:8px"><table class="t"><thead><tr><th>Per AT location</th>${TIER_NAMES.map(n=>`<th class="n">${n}</th>`).join("")}</tr></thead><tbody>
-      ${COURT_ITEMS.map(it=>`<tr data-r="${it.id}"><td>${esc(it.name)}<span class="note">${esc(unitPlural(it))}</span></td>${tierAmts(it).map((v,i)=>
-        `<td class="n"><input data-tier="${i}" type="number" inputmode="decimal" step="any" min="0" value="${v}" aria-label="${esc(it.name)}, ${TIER_NAMES[i]}"></td>`).join("")}</tr>`).join("")}
-      </tbody></table></div><p class="hint">Totals are rounded up for each tournament.</p></div>`;
-    h+=`<div class="card"><h3>Full box contents</h3><p class="sub">How many of each item a fully stocked box has.</p>
-      ${BOX_SECTIONS.map((sec,si)=>`<p style="margin:14px 0 2px;font-weight:600">${esc(sec.title)}</p>${STD_BOX_ITEMS.filter(i=>i.sec===si).map(it=>
-        `<div class="lvl"><span>${esc(it.name)}</span><span class="lvl-in"><input data-lvl="${it.id}" type="number" inputmode="decimal" step="any" min="0" value="${target(it)}"><small>${esc(unitWord(it,target(it)))}</small></span></div>`).join("")}`).join("")}</div>`;
+    h+=`<div class="card" data-qgroup><h3>Tournament supplies</h3><p class="sub">Pulled from excess inventory for each tournament, based on its AT locations and days.</p>
+      ${COURT_ITEMS.map(it=>{const r=rate(it);return `<div class="rate" data-r="${it.id}" data-q="${esc(it.name)}"><span class="name">${esc(it.name)}</span><div class="rl">${it.ice
+        ?`<input data-rk="rate" type="number" inputmode="decimal" step="any" min="0" value="${esc(r.rate)}"> ${esc(unitPlural(it))} per <input data-rk="days" type="number" inputmode="decimal" step="any" min="0" value="${esc(r.days)}"> tournament days`
+        :`<input data-rk="rate" type="number" inputmode="decimal" step="any" min="0" value="${esc(r.rate)}"> ${esc(unitPlural(it))} per day per AT location`}</div></div>`;}).join("")}</div>`;
+    h+=`<div class="card" data-qgroup><h3>Full box contents</h3><p class="sub">How many of each item a fully stocked box has.</p>
+      ${BOX_SECTIONS.map((sec,si)=>`<div data-qgroup><p style="margin:14px 0 2px;font-weight:600">${esc(sec.title)}</p>${STD_BOX_ITEMS.filter(i=>i.sec===si).map(it=>
+        `<div class="lvl" data-q="${esc(it.name+" "+sec.title)}"><span>${esc(it.name)}</span><span class="lvl-in"><input data-lvl="${it.id}" type="number" inputmode="decimal" step="any" min="0" value="${target(it)}"><small>${esc(unitWord(it,target(it)))}</small></span></div>`).join("")}</div>`).join("")}</div>`;
     h+=extrasSetupHTML();
     if(!LOCAL)h+=`<div class="card"><button class="link danger" id="s-lock">Lock setup on this device</button></div>`;
   }
   main().innerHTML=h;
-  if(fk){const e=main().querySelector(fk);if(e)e.focus({preventScroll:true});}
   if(!LOCAL&&$("#s-sync"))$("#s-sync").textContent=$("#sync").textContent;
   $("#s-name").oninput=e=>{L.name=e.target.value.trim();persist();};
   if($("#s-refresh"))$("#s-refresh").onclick=async()=>{await flush();await load();render();toast("Up to date");};
@@ -1064,6 +1019,7 @@ function renderSetup(){
     return;
   }
   if($("#s-lock"))$("#s-lock").onclick=()=>{L.admin="";persist();render();};
+  wireSearch(applySearch);applySearch();
   const sorg=curOrg();
   main().querySelectorAll("details.ev").forEach(d=>d.addEventListener("toggle",()=>{if(!d.isConnected)return;if(d.open){L.openEv=sorg+"|"+d.dataset.ev;main().querySelectorAll("details.ev").forEach(o=>{if(o.dataset.ev!==d.dataset.ev&&o.open)o.open=false;});}else if(L.openEv===sorg+"|"+d.dataset.ev)L.openEv="";persist();}));
   const newTour=(name,src)=>{const def=(EVENTS[sorg]||[]).find(e=>e[0]===name);
@@ -1078,17 +1034,12 @@ function renderSetup(){
     const tid=card.dataset.t, T=()=>tourById(tid);
     card.querySelectorAll("[data-k]").forEach(inp=>{
       inp.oninput=()=>{const t=T();if(!t)return;t[inp.dataset.k]=inp.value;saveCfg("tournaments");renderTabs();};
-      if(inp.dataset.k==="locs")inp.onchange=()=>{saveCfg("tournaments");laterSetup();};
-      if(inp.dataset.k==="name")inp.onchange=()=>{const t=T();if(t)L.openEv=sorg+"|"+t.name;saveCfg("tournaments");persist();laterSetup();};
-      /* dates: redraw only after leaving the field, so the date picker stays open */
-      if(inp.dataset.k==="date")inp.onblur=()=>{if(inp.value!==inp.defaultValue){saveCfg("tournaments");persist();laterSetup();}};
+      if(inp.dataset.k==="date"||inp.dataset.k==="name")inp.onchange=()=>{const t=T();if(t&&inp.dataset.k==="name")L.openEv=sorg+"|"+t.name;saveCfg("tournaments");persist();renderSetup();};
     });
-    card.querySelectorAll("[data-court]").forEach(inp=>inp.oninput=()=>{
-      const t=T();if(!t)return;const a=locCourts(t).map(c=>c??"");a[+inp.dataset.court]=inp.value.trim();t.courts=a.join(",");saveCfg("tournaments");});
     card.querySelectorAll("[data-box]").forEach(cb=>cb.onchange=()=>{
       const t=T();if(!t)return;const b=cb.dataset.box;
       t.boxes=(t.boxes||[]).filter(x=>x!==b);if(cb.checked)t.boxes.push(b);
-      saveCfg("tournaments",0);laterSetup();
+      saveCfg("tournaments",0);renderSetup();
     });
     card.querySelector("[data-del-t]").onclick=async()=>{
       const t=T();if(!t)return;
@@ -1114,12 +1065,8 @@ function renderSetup(){
       saveCfg("boxes",0);saveCfg("tournaments",0);render();
     };
   });
-  main().querySelectorAll("[data-r]").forEach(row=>row.querySelectorAll("[data-tier]").forEach(inp=>inp.oninput=()=>{
-    const id=row.dataset.r;const A=tierAmts(itm(id));A[+inp.dataset.tier]=inp.value===""?0:Math.max(0,num(inp.value));
-    rates()[id]=Object.assign({},rates()[id]||{},{tier4:A});saveCfg("rates");}));
-  main().querySelectorAll("[data-cut]").forEach(inp=>inp.oninput=()=>{
-    const c=tierCuts();c[+inp.dataset.cut]=Math.max(0,num(inp.value));rates()._tiers4={upTo:c};saveCfg("rates");
-    $("#tier-hint").textContent=TIER_NAMES.map((n,i)=>tierLabel(i)).join(" · ");});
+  main().querySelectorAll("[data-r]").forEach(row=>row.querySelectorAll("[data-rk]").forEach(inp=>inp.oninput=()=>{
+    const id=row.dataset.r;L.cfg.rates[id]=Object.assign({},L.cfg.rates[id]||{},{[inp.dataset.rk]:inp.value});saveCfg("rates");}));
   main().querySelectorAll("[data-lvl]").forEach(inp=>inp.oninput=()=>{
     L.cfg.targets[inp.dataset.lvl]=inp.value===""?null:num(inp.value);saveCfg("targets");
     const it=itm(inp.dataset.lvl);inp.nextElementSibling.textContent=unitWord(it,target(it));});
@@ -1145,16 +1092,21 @@ function buildCSV(){
   o.push(["Tournament history"],["Organization","Tournament","Start date","Box","Section","Item","Unit","Full box","Pre count","Post count","Used","Restock"]);
   ORGS.forEach(org=>sessions(org).forEach(tid=>{const t=tourById(tid);
     boxes(org).forEach(b=>{if(!sessionHasCounts(tid,b.id))return;
-      boxRows(tid,b.id).forEach(r=>o.push([org,t?t.name:sessName(tid),t?t.date:"",b.name,secTitle(r.it),r.it.name,unitPlural(r.it),r.full,r.pre??"",r.post??"",r.used,r.restock]));});}));
+      boxRows(tid,b.id).forEach(r=>o.push([org,t?t.name:sessName(tid),t?t.date:"",b.name,secTitle(r.it),r.it.name,unitPlural(r.it),r.full,r.pre??"",r.post??"",r.used,r.restock]));});
+    const xl=excessSessLoc(tid,org);
+    if(excessItemsAll().some(it=>get(xl,it.id,"pre")!==null||get(xl,it.id,"post")!==null))
+      excessItemsAll().forEach(it=>{const pre=get(xl,it.id,"pre"),post=get(xl,it.id,"post");if(pre===null&&post===null)return;
+        o.push([org,t?t.name:sessName(tid),t?t.date:"","Excess",secTitle(it),it.name,unitPlural(it),"",pre??"",post??"",pre!==null&&post!==null?fmt(Math.max(0,pre-post)):"",""]);});
+  }));
   o.push([],["Tournaments"],["Organization","Tournament","Start date","AT locations","Days","Boxes"]);
-  sortedTours().forEach(t=>o.push([tourOrg(t),t.name,t.date,courtsText(t),num(t.days),(t.boxes||[]).map(boxName).join("; ")]));
+  sortedTours().forEach(t=>o.push([tourOrg(t),t.name,t.date,num(t.locs),num(t.days),(t.boxes||[]).map(boxName).join("; ")]));
   ORGS.forEach(org=>{const UP=upcoming(org);
-    o.push([],[`${org} order list (all upcoming ${org} tournaments)`],["Item","Henry Schein #","Unit","Needed","In excess","To order"]);
-    orderRows(UP).forEach(r=>o.push([r.it.name,HS[r.it.id]?HS[r.it.id][0]:"",unitPlural(r.it),fmt(r.need),r.ex===null?"":r.ex,fmt(r.order)]));
+    o.push([],[`${org} order list (all upcoming ${org} tournaments)`],["Item","Unit","Needed","In excess","To order"]);
+    orderRows(UP).forEach(r=>o.push([r.it.name,unitPlural(r.it),fmt(r.need),r.ex===null?"":r.ex,fmt(r.order)]));
   });
-  ORGS.forEach(org=>{const G=nextGroup(org);const N=needs(G);const xl=excessLoc(org);
-    o.push([],[`${org} excess inventory`,G.length?`Needed = ${G.map(tourLabel).join(" and ")}`:""],["Section","Item","Unit","On hand","Needed for next tournament","Short","Notes"]);
-    excessItemsAll().forEach(it=>{const c=get(xl,it.id,"now"),n=N[it.id]||0;
+  ORGS.forEach(org=>{const G=nextGroup(org);const N=needs(G);
+    o.push([],[`${org} excess inventory (latest count)`,G.length?`Needed = ${G.map(tourLabel).join(" and ")}`:""],["Section","Item","Unit","On hand","Needed for next tournament","Short","Notes"]);
+    excessItemsAll().forEach(it=>{const c=excessOnHand(it.id,org),n=N[it.id]||0;
       o.push([secTitle(it),it.name,unitPlural(it),c??"",n||"",c!==null&&c<n?fmt(n-c):"",L.cfg.comments[it.id]||""]);});
   });
   return "\ufeff"+o.map(r=>r.map(csvCell).join(",")).join("\r\n");
@@ -1169,7 +1121,7 @@ function buildPDF(){
   doc.setFont("helvetica","bold");doc.setFontSize(18);doc.text("Medical Supply Inventory",Lm,y);y+=20;
   doc.setFontSize(13);doc.text(pt(tid?(t?orgLabel(t):sessName(tid)):"No tournament selected"),Lm,y);y+=16;
   doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(100);
-  if(t){doc.text(pt([fmtDate(t.date),courtsText(t),`${num(t.days)} days`].filter(Boolean).join(", ")),Lm,y);y+=14;}
+  if(t){doc.text(pt([fmtDate(t.date),`${num(t.locs)} AT locations`,`${num(t.days)} days`].filter(Boolean).join(", ")),Lm,y);y+=14;}
   doc.text(pt(`Exported ${new Date().toLocaleString()}${L.name?` by ${L.name}`:""}`),Lm,y);y+=26;
   const center={halign:"center"};
   if(tid){
@@ -1180,14 +1132,15 @@ function buildPDF(){
   }
   H(`${curOrg()} order list (all upcoming ${curOrg()} tournaments)`);
   const O=orderRows(upcoming());
-  if(O.length)tbl(["Item","Needed","In excess","To order"],O.map(r=>[r.it.name+(HS[r.it.id]?` (#${HS[r.it.id][0]})`:""),qty(r.it,r.need),r.ex===null?"-":r.ex,qty(r.it,r.order)]),
+  if(O.length)tbl(["Item","Needed","In excess","To order"],O.map(r=>[r.it.name,qty(r.it,r.need),r.ex===null?"-":r.ex,qty(r.it,r.order)]),
     {columnStyles:{2:center,3:{fontStyle:"bold",textColor:[192,57,30]}}});
   else{y+=6;doc.setFont("helvetica","normal");doc.setFontSize(10);doc.text("Nothing needed.",Lm,y);y+=22;}
   const NG=nextGroup();const N=needs(NG);
   H(`${curOrg()} excess inventory${NG.length?` (needed for ${NG.map(t=>t.name||"Untitled").join(" and ")})`:""}`);
-  tbl(["Item","On hand","Needed","Short"],excessItemsAll().map(it=>{const c=get(excessLoc(),it.id,"now"),n=N[it.id]||0;
-    return [it.name+(unitPlural(it)?` (${unitPlural(it)})`:"")+(L.cfg.comments[it.id]?`\nNote: ${L.cfg.comments[it.id]}`:""),c??"-",n||"",c!==null&&c<n?fmt(n-c):""];}),
-    {columnStyles:{1:center,2:center,3:{halign:"center",fontStyle:"bold",textColor:[192,57,30]}}});
+  const xl=tid?excessSessLoc(tid,curOrg()):null;
+  tbl(["Item","Pre","Post","Used","On hand","Needed","Short"],excessItemsAll().map(it=>{const pre=xl?get(xl,it.id,"pre"):null,post=xl?get(xl,it.id,"post"):null,c=excessOnHand(it.id),n=N[it.id]||0;
+    return [it.name+(unitPlural(it)?` (${unitPlural(it)})`:"")+(L.cfg.comments[it.id]?`\nNote: ${L.cfg.comments[it.id]}`:""),pre??"-",post??"-",pre!==null&&post!==null?fmt(Math.max(0,pre-post)):"",c??"-",n||"",c!==null&&c<n?fmt(n-c):""];}),
+    {columnStyles:{1:center,2:center,3:center,4:center,5:center,6:{halign:"center",fontStyle:"bold",textColor:[192,57,30]}}});
   const P=doc.getNumberOfPages();
   for(let p=1;p<=P;p++){doc.setPage(p);doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(120);
     doc.text(`Page ${p} of ${P}`,doc.internal.pageSize.getWidth()-Lm,doc.internal.pageSize.getHeight()-20,{align:"right"});}
@@ -1212,24 +1165,6 @@ $("#k-go").onclick=async()=>{
   }catch(e){$("#k-err").textContent="Couldn’t reach the inventory. Check your connection.";}
 };
 $("#connect").addEventListener("cancel",e=>e.preventDefault());
-
-/* ---------- Enter key: submit dialogs and codes, otherwise move to the next box ---------- */
-document.addEventListener("keydown",e=>{
-  const el=e.target;
-  if(e.key!=="Enter"||e.isComposing||el.tagName!=="INPUT"||el.type==="checkbox")return;
-  e.preventDefault();
-  const dlg=el.closest("dialog");
-  if(dlg){
-    const ins=[...dlg.querySelectorAll("input:not([type=checkbox])")].filter(i=>i.offsetParent);
-    const next=ins[ins.indexOf(el)+1];
-    if(next&&!next.value){next.focus();return;}
-    const go=dlg.querySelector(".dlg-actions .btn.primary");if(go)go.click();return;
-  }
-  if(el.id==="s-admin"){$("#s-unlock").click();return;}
-  const ins=[...main().querySelectorAll("input:not([type=checkbox])")].filter(i=>i.offsetParent&&!i.disabled);
-  const next=ins[ins.indexOf(el)+1];
-  if(next){next.focus();if(next.select&&next.type!=="date")try{next.select();}catch(x){}}else el.blur();
-});
 
 /* ---------- start ---------- */
 render();
