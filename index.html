@@ -864,6 +864,22 @@ function completeHTML(loc,ph){
   if(isLocked(loc,ph))return "";
   return `<button class="btn primary complete" id="complete">Save and complete ${phaseName(ph)} count</button>`;
 }
+/* post-tournament: start from the pre-tournament numbers, filling only items without a post count */
+function copyPreHTML(loc,ph,list){
+  if(ph!=="post"||isLocked(loc,"post")||!list.some(it=>get(loc,it.id,"pre")!==null))return "";
+  return `<button class="btn ghost sm" id="copypre" style="width:100%;margin-top:10px">Copy pre-tournament counts</button>`;
+}
+function wireCopyPre(loc,list){
+  const b=$("#copypre");if(!b)return;
+  b.onclick=async()=>{
+    const fill=list.filter(it=>get(loc,it.id,"pre")!==null&&get(loc,it.id,"post")===null);
+    if(!fill.length){toast("Every item with a pre-tournament count already has a post count");return;}
+    const kept=list.filter(it=>get(loc,it.id,"pre")!==null&&get(loc,it.id,"post")!==null).length;
+    if(!await confirmDlg("Copy pre-tournament counts?",`Fills in ${fill.length} item${fill.length>1?"s":""} with ${fill.length>1?"their":"its"} pre-tournament count, so you only change what was used.${kept?` ${kept} post count${kept>1?"s":""} already entered stay${kept>1?"":"s"} as ${kept>1?"they are":"it is"}.`:""}`,"Copy counts"))return;
+    fill.forEach(it=>setCount(loc,it.id,"post",get(loc,it.id,"pre")));
+    updateRows();toast(`Copied ${fill.length} count${fill.length>1?"s":""}`);
+  };
+}
 function wireComplete(loc,ph,what,where,list){
   const c=$("#complete");
   if(c)c.onclick=async()=>{
@@ -913,12 +929,13 @@ function renderBox(id){
       <p class="hint" id="tally"></p>
       ${chipsHTML("Restock")}
       ${searchHTML("Search this box")}
+      ${copyPreHTML(loc,ph,boxItemsFor(id))}
       ${isLocked(loc,ph)?lockBannerHTML(loc,ph):`<div class="row-between" style="margin-top:6px"><span></span><button class="link danger" id="newcount">Clear this box’s ${ph}-tournament count</button></div>`}
     </div>${groupsHTML(boxItemsFor(id),true,false)}${completeHTML(loc,ph)}`;
   $("#tsel").onchange=e=>{pickTour(e.target.value);render();};
   main().querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{L.phase[id]=b.dataset.p;persist();renderCtx();renderBox(id);});
   if($("#newcount"))$("#newcount").onclick=()=>clearPhase(loc,ph,boxName(id),sessName(tid));
-  wireComplete(loc,ph,boxName(id),sessName(tid),boxItemsFor(id));
+  wireComplete(loc,ph,boxName(id),sessName(tid),boxItemsFor(id));wireCopyPre(loc,boxItemsFor(id));
   wireChips();wireRows(loc,()=>L.phase[id]||"post");wireAddExtra(true);wireSearch(()=>updateRows());updateRows();
 }
 /* ---------- extra supplies ---------- */
@@ -1043,12 +1060,13 @@ function renderExcess(){
     <div class="meter" id="meter"><i class="m-ok"></i><i class="m-flag"></i></div><p class="hint" id="tally"></p>
     ${chipsHTML("Short")}
     ${searchHTML("Search excess supplies")}
+    ${copyPreHTML(loc,ph,excessItemsAll())}
     ${isLocked(loc,ph)?lockBannerHTML(loc,ph):`<div class="row-between" style="margin-top:6px"><span></span><button class="link danger" id="newcount">Clear the excess ${ph}-tournament count</button></div>`}
   </div>${groupsHTML(items(),false,true)}${completeHTML(loc,ph)}`;
   $("#tsel").onchange=e=>{pickTour(e.target.value);render();};
   main().querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{L.phase.excess=b.dataset.p;persist();renderCtx();renderExcess();});
   if($("#newcount"))$("#newcount").onclick=()=>clearPhase(loc,ph,`${org} excess`,sessName(tid));
-  wireComplete(loc,ph,`${org} excess`,sessName(tid),excessItemsAll());
+  wireComplete(loc,ph,`${org} excess`,sessName(tid),excessItemsAll());wireCopyPre(loc,excessItemsAll());
   wireChips();wireRows(loc,()=>L.phase.excess||"post");wireAddExtra(false);wireSearch(()=>updateRows());updateRows();
 }
 
