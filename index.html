@@ -98,8 +98,8 @@ section.grp{margin-bottom:18px}
 
 .field{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:500}
 .field input,.field select{border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:var(--bg);font-size:16px;min-width:0;color:var(--ink)}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .wide{grid-column:1/-1}
 .boxpick{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .boxpick label{display:flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:999px;padding:6px 12px 6px 8px;font-weight:600;font-size:14px;cursor:pointer}
@@ -119,6 +119,8 @@ table.t{width:100%;border-collapse:collapse;font-size:15px}
 .t tr:last-child td{border-bottom:0}
 .t .n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .t .hot{color:var(--flag);font-weight:700}
+.t input{width:56px;border:1px solid var(--line);border-radius:6px;padding:5px 2px;background:var(--bg);text-align:center;font-size:15px}
+.t .note{white-space:normal}
 .tw{overflow-x:auto}
 .mini{margin:6px 0 0;padding:0;list-style:none;font-size:15px}
 .mini li{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px dashed var(--line)}
@@ -201,6 +203,21 @@ details.ev > .btn{margin:0 12px 12px;width:calc(100% - 24px)!important}
 
 .clr{background:none;border:0;padding:4px 0 0;color:var(--muted);font-size:13px;font-weight:600;text-decoration:underline;cursor:pointer}
 .clr:hover{color:var(--flag)}
+.items{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+details.ied{border-top:1px solid var(--line)}
+details.ied:first-child{border-top:0}
+details.ied summary{list-style:none;display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:10px 12px;cursor:pointer}
+details.ied summary::-webkit-details-marker{display:none}
+details.ied summary::after{content:"+";font-weight:600;color:var(--court);margin-left:6px}
+details.ied[open] summary::after{content:"−"}
+details.ied[open]{background:var(--court-soft)}
+.ied-b{padding:0 12px 12px}
+.ied-b .lvl-in input{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:var(--bg);font-size:16px;min-width:0;color:var(--ink)}
+.cat-h{margin:16px 0 6px;font-weight:700}
+.done{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--ok-bg);color:var(--ok);font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.done .link{padding:0}
+.complete{width:100%;margin:4px 0 8px}
+.item input:disabled,.item button:disabled{opacity:.55;cursor:default}
 </style>
 </head>
 <body>
@@ -255,22 +272,22 @@ const LOCAL = !API_URL;
 const LS = "msi-v2";
 
 const U={jar:["jar","jars"],box:["box","boxes"],bottle:["bottle","bottles"],ampule:["ampule","ampules"],
-  roll:["roll","rolls"],pack:["pack","packs"],tube:["tube","tubes"],sleeve:["sleeve","sleeves"],wrap:["wrap","wraps"]};
+  roll:["roll","rolls"],pack:["pack","packs"],tube:["tube","tubes"],sleeve:["sleeve","sleeves"],wrap:["wrap","wraps"],can:["can","cans"]};
 // [id, name, full-box quantity, unit]
 const BOX_SECTIONS = [
   {title:"Wound care", items:[
-    ["2nd-skin","2nd Skin",1,"jar"],["band-aids-1-3-strips","Bandaids – 1x3 Strips",2,"box","300 per box"],
+    ["2nd-skin","2nd Skin",1,"jar"],["band-aids-1-3-strips","Bandaids – 1x3 Strips",2,"box","100 per box"],
     ["band-aids-4-wing","Bandaids – 4 Wing",2,"box","50 per box"],["band-aids-knuckle","Bandaids – Knuckle",2,"box","100 per box"],
-    ["eye-drops","Eye Drops",1,"bottle"],["hand-sanitizer","Hand Sanitizer",1,"bottle"],
+    ["eye-drops","Eye Drops",1,"bottle"],["hibiclens","Hibiclens",1,"bottle","4 oz"],["hand-sanitizer","Hand Sanitizer",1,"bottle"],
     ["hydrocortisone-single-packets","Hydrocortisone Single Packets",1,"box","144 per box"],["hydrogen-peroxide","Hydrogen Peroxide",1,"bottle"],
     ["isopropyl-alcohol","Isopropyl Alcohol",1,"bottle"],["mastisol","Mastisol",10,"ampule"],
     ["non-adherent-pads","Non Adherent Pads",1,"box"],["nose-plugs","Nose Plugs",4,"roll"],
     ["ns-new-sponges","NS New Sponges",1,"box"],["skin-lube","Skin Lube",1,"tube"],
     ["steri-strips","Steri Strips",5,"sleeve"],["sterile-4x4-gauze","Sterile 4x4 Gauze",1,"box"],
-    ["triple-antibiotic-single-packets","Triple Antibiotic Single Packets",1,"box"],["wound-wash-saline-spray","Wound Wash Saline Spray",1,"bottle","4 oz can"]]},
+    ["triple-antibiotic-single-packets","Triple Antibiotic Single Packets",1,"box"],["wound-wash-saline-spray","Wound Wash Saline Spray",1,"bottle","7.4 oz can"]]},
   {title:"Tapes", items:[
     ["cover-roll","Cover Roll",1,"roll"],["1-inch-elastikon-or-ac-plus","1-inch Elastikon",1,"box","12 rolls per box"],
-    ["inch-tape","¼-inch Tape",2,"box"],["2-inch-elastikon-or-ac-plus","2-inch Elastikon",1,"box","6 rolls per box"]]},
+    ["inch-tape","½-inch White Tape",2,"box"],["2-inch-elastikon-or-ac-plus","2-inch Elastikon",1,"box","6 rolls per box"],["tuf-skin","Tuf-Skin",1,"can","4 oz spray"]]},
   {title:"Splints & bracing", items:[
     ["36-sam-splint","36\" SAM Splint",3,""],["4-inch-single","4-inch Single",6,"wrap"],
     ["6-inch-double","6-inch Double",4,"wrap"],["6-inch-single","6-inch Single",6,"wrap"],
@@ -280,23 +297,78 @@ const BOX_SECTIONS = [
     ["gloves-large","Gloves – Large",1,"box"],["gloves-medium","Gloves – Medium",1,"box"],
     ["ibuprofen-single-dose-packs","Ibuprofen – Single Dose Packs",1,"box","250 packs per box"],["scissors","Scissors",1,""],
     ["shark","Shark",1,""],["stop-pain-single-dose-packs","Stop Pain – Single Dose Packs",1,"box"],
-    ["tampons","Tampons",1,"box"],["tums-single-dose-packs","Tums – Single Dose Packs",1,"box","250 packs per box"]]}
+    ["tampons","Tampons",1,"box"],["tums-single-dose-packs","Tums – Single Dose Packs",1,"box","75 two-packs per box"]]}
 ];
 const COURT_SECTION = {title:"Tournament supplies", court:true, items:[
-  ["1-white-tape","1½\" White Tape",{rate:2},"box"],
-  ["ecoflex-2","EcoFlex 2\"",{rate:1.5},"box"],
-  ["flexi-wrap","Flexi-wrap",{rate:0},"roll"],
-  ["ice-bags","Ice Bags",{ice:true,rate:1,days:3},"roll"],
-  ["powerflex-1","Powerflex 1\"",{rate:1},"box"],
-  ["prewrap","Prewrap",{rate:0.5},"box"]]};
+  // tier = amount per AT location for the whole tournament: [League Play, Small, Medium, Large] by court count
+  ["1-white-tape","1½\" White Tape",{tier:[1,2,4,6]},"box"],
+  ["ecoflex-2","EcoFlex 2\"",{tier:[1,2,2,3]},"box"],
+  ["flexi-wrap","Flexi-wrap",{tier:[1,1,1,2]},"roll"],
+  ["ice-bags","Ice Bags",{ice:true,tier:[0.25,0.5,0.5,1]},"roll"],
+  ["powerflex-1","EcoFlex 1\"",{tier:[0.5,1,2,3]},"box"],
+  ["prewrap","Prewrap",{tier:[0.5,1,1,2]},"box"]]};
+/* kept in excess only, never packed in a box */
+const EXONLY_SECTION={title:"Excess only", exonly:true, items:[
+  ["shark-blades","Shark Replacement Blades",0,"box","10 per box"]]};
 
-const mk=(sec,si)=>sec.items.map(([id,name,base,unit,note])=>({id,name,base,unit,note:note||"",sec:si,court:!!sec.court,ice:!!(base&&base.ice)}));
+/* Henry Schein catalog: item id -> [item code, description, inventory units per Henry Schein selling unit] */
+const HS={
+  "1-white-tape":["1348646","950 Porous Athletic Tape Cotton/Zinc Oxide 1.5\"x15yd White Non-Sterile 32/Bx"],
+  "ecoflex-2":["1345853","Eco-Flex Underwrap/Wound Dressing Tape Elastic 2\"x6yd Black 24Rl/Ca"],
+  "flexi-wrap":["1340297","Flex-I-Wrap Compression Wrap 6\""],
+  "ice-bags":["3240021","Ice Bag Roll 10x18\""],
+  "powerflex-1":["7350055","Eco-Flex Athletic Tape Cloth 1\"x6yd Black 48Rl/Ca"],
+  "prewrap":["3640173","Athletic Underwrap Foam 2.75\"x30yd Navy 48/Ca"],
+  "2nd-skin":["6452314","2nd Skin Blister Prevention Bandage Hydrogel 1x1\" Blue Non-Sterile 200/jr"],
+  "band-aids-1-3-strips":["1271254","American White Cross Adhesive Bandage Fabric 1x3\" Tan Sterile 100/Bx"],
+  "band-aids-4-wing":["1271255","American White Cross Adhesive Bandage Fabric 3x2.88\" Tan Sterile 50/Bx"],
+  "band-aids-knuckle":["1271246","American White Cross Adhesive Bandage 1.5x3\" Beige Sterile 100/Bx"],
+  "eye-drops":["1514399","Medi-First Eye/Skin Wash Solution 98.3% 4oz/Bt"],
+  "hand-sanitizer":["5900066","Purell Advanced Gel Sanitizer 12oz/Bt"],
+  "hydrocortisone-single-packets":["1489851","Hydrocortisone Cream 0.9gm 1/32oz Foil Packet 144/Pk"],
+  "hydrogen-peroxide":["1127012","Hydrogen Peroxide Antiseptic Topical Solution 3% 8oz/Bt"],
+  "isopropyl-alcohol":["1127067","Isopropyl Alcohol Solution 70% 16oz/Bt"],
+  "mastisol":["7285234","Mastisol Liquid Adhesive 48/Bx",48],
+  "non-adherent-pads":["8900899","Telfa Ouchless Gauze Pad 2x3\" Sterile Non-Adherent"],
+  "nose-plugs":["1025455","Cotton Roll 1.5 in Non Sterile 2000/Bx",2000],
+  "ns-new-sponges":["1018748","Henry Schein Premium Rayon/Polyester Non-Woven Sponge 3x3\" 4Pl NS"],
+  "skin-lube":["1347698","Skin-Lube Ointment 2-3/4oz 1/Tb"],
+  "steri-strips":["9004315","Wound Closure Strip 1/4x3\" Opaque 150/Bx",50],
+  "sterile-4x4-gauze":["1202473","Rayon/Polyester Blend Top Sponge 4x4\" Sterile"],
+  "triple-antibiotic-single-packets":["5703128","Triple Antibiotic Topical Ointment 0.9gm Foil Packet 144/Bx"],
+  "wound-wash-saline-spray":["1315823","Simply Saline Wound Wash Topical Spray 7.4oz/Cn"],
+  "cover-roll":["9110006","Cover-Roll Stretch Bandage Elastic 6\"x10yd White Ea"],
+  "1-inch-elastikon-or-ac-plus":["1417049","ELASTIKON by Actimove Athletic Tape Cotton/Elastic 1\"x2.5yd Tan 12/Bx"],
+  "inch-tape":["1344087","950 Porous Trainers Tape Cotton/Zinc Oxide .5\"x10yd White Non-Sterile 24/Ca"],
+  "2-inch-elastikon-or-ac-plus":["1405639","ELASTIKON by Actimove Elastic Tape Cotton 2\"x2.5yd Beige 24/Ca",4],
+  "36-sam-splint":["3601359","SAM Emergency Splint Limb Aluminum/Foam 4.25x36\""],
+  "4-inch-single":["9004683","Stretch Bandage Elastic 4\"x4.5yd Tan Non-Sterile 10/Bx",10],
+  "6-inch-double":["3200045","Supra-Grip Elastic Support Bandage 6\"x11yd Tan NS 10/Bx",10],
+  "6-inch-single":["9004684","Stretch Bandage Elastic 6\"x4.5yd Tan Non-Sterile 10/Bx",10],
+  "finger-sam-splint":["7000644","SAM Emergency Splint Finger Aluminum/Foam"],
+  "horseshoe":["3730009","Horseshoe Therapy Support Ankle 12/Pk"],
+  "slings":["3758444","Procare Envelope Sling Arm One Size Cotton/Polyester 7x18\""],
+  "acetaminophen-single-dose-packs":["9004689","Henry Schein Pain Reliever Tablets 325mg Pouch 250x2/Bx"],
+  "clorox-wipes":["1399110","Super Sani-Cloth Germicidal Wipes Soft Pack 80/Pk"],
+  "gloves-large":["1372696","Carbon Air Nitrile Exam Gloves Large Black Non-Sterile 300/Bx"],
+  "gloves-medium":["5703484","Criterion N300 Nitrile Exam Gloves Medium Black Non-Sterile 300/Bx"],
+  "ibuprofen-single-dose-packs":["5700177","Ibuprofen NSAID Tablets 200mg Pouch 250x2/Bx"],
+  "scissors":["1205649","Super Pro Non-Stick Scissors 9.2x3.5x0.4\" Stainless Steel/Teflon Ea"],
+  "shark":["1345242","Shark Tape Cutter 8-1/4\" Valox Resin/Fiberglass Ea"],
+  "stop-pain-single-dose-packs":["1432175","Stopain Clinical Gel 100/Bx"],
+  "tampons":["1235145","Tampax Sanitary Tampon Regular 10/Bx"],
+  "hibiclens":["1078796","Hibiclens Pre-Op Scrub 4 oz Flip Top Bottle Unscented 4oz/Bt"],
+  "tuf-skin":["1347944","Tuf-Skin Taping Spray 4oz Colorless"],
+  "shark-blades":["1345055","Shark Steel Non-Sterile Tape Cutter Blade Standard 10/Bx"],
+  "tums-single-dose-packs":["3500009","Medique Ban-acid Antacid Tablets 750mg Berry 75x2/Bx"]
+};
+
+const mk=(sec,si)=>sec.items.map(([id,name,base,unit,note])=>({id,name,base,unit,note:note||"",sec:si,court:!!sec.court,exonly:!!sec.exonly,ice:!!(base&&base.ice)}));
 const STD_BOX_ITEMS=BOX_SECTIONS.flatMap(mk);
 const COURT_ITEMS=mk(COURT_SECTION,"c");
-const ITEM={};[...STD_BOX_ITEMS,...COURT_ITEMS].forEach(i=>ITEM[i.id]=i);
+const EXONLY_ITEMS=mk(EXONLY_SECTION,"e");
+const ITEM={};[...STD_BOX_ITEMS,...COURT_ITEMS,...EXONLY_ITEMS].forEach(i=>ITEM[i.id]=i);
 const EXTRA_SECTION={title:"Extra supplies",extra:true};
-const EXCESS_SECTIONS=[COURT_SECTION,...BOX_SECTIONS,EXTRA_SECTION];
-const BOX_TAB_SECTIONS=[...BOX_SECTIONS,EXTRA_SECTION];
 
 const ORGS=["JVA","3Step"];
 const EVENTS={
@@ -340,16 +412,53 @@ function allBoxes(){
 }
 const boxes=(org)=>allBoxes().filter(b=>b.org===(org||curOrg()));
 const extras=()=>(L.cfg.extras||[]).map(x=>({id:x.id,name:x.name||"Unnamed item",unit:x.unit||x.note||"",base:x.inBoxes?num(x.level):0,sec:"x",extra:true,inBoxes:!!x.inBoxes}));
-const boxItemsAll=()=>[...STD_BOX_ITEMS,...extras().filter(x=>x.inBoxes)];
-const excessItemsAll=()=>[...COURT_ITEMS,...STD_BOX_ITEMS,...extras()];
+/* Admin item layout, saved inside cfg.rates._layout:
+   cat:{id:category}, cats:[custom categories], boxes:{id:[box ids it is in]}, merged:{fromId:toId}, removed:[ids] */
+function LAY(){
+  const r=rates();if(!r._layout||typeof r._layout!=="object"||Array.isArray(r._layout))r._layout={};const l=r._layout;
+  ["cat","boxes","merged"].forEach(k=>{if(!l[k]||typeof l[k]!=="object"||Array.isArray(l[k]))l[k]={};});
+  ["cats","removed"].forEach(k=>{if(!Array.isArray(l[k]))l[k]=[];});
+  return l;
+}
+const gone=id=>LAY().removed.includes(id)||has(LAY().merged[id]);
+const defCat=it=>it.exonly?EXONLY_SECTION.title:it.extra?EXTRA_SECTION.title:BOX_SECTIONS[it.sec].title;
+const catOf=it=>it.court?COURT_SECTION.title:(LAY().cat[it.id]||defCat(it));
+const defIn=it=>it.exonly?false:it.extra?it.inBoxes:true;
+const inBox=(it,bid)=>{if(it.court)return false;const e=LAY().boxes[it.id];return Array.isArray(e)?e.includes(bid):defIn(it);};
+const inAnyBox=it=>allBoxes().some(b=>inBox(it,b.id));
+const items=()=>[...STD_BOX_ITEMS,...EXONLY_ITEMS,...extras()].filter(it=>!gone(it.id));
+const boxItemsFor=bid=>items().filter(it=>inBox(it,bid));
+const boxItemsAll=()=>items().filter(inAnyBox);
+const excessItemsAll=()=>[...COURT_ITEMS,...items()];
 const itm=id=>ITEM[id]||extras().find(x=>x.id===id);
-const secTitle=it=>it.court?COURT_SECTION.title:it.extra?EXTRA_SECTION.title:BOX_SECTIONS[it.sec].title;
+const secTitle=it=>catOf(it);
+function catOrder(list){
+  const fixedEnd=[EXONLY_SECTION.title,EXTRA_SECTION.title];
+  const o=[...BOX_SECTIONS.map(s=>s.title)];
+  [...LAY().cats,...(list||[]).map(catOf)].forEach(c=>{if(c&&!o.includes(c)&&!fixedEnd.includes(c)&&c!==COURT_SECTION.title)o.push(c);});
+  return [...o,...fixedEnd];
+}
 const BOX_COLORS=["#0F7C7C","#C2570A","#6B3FA0","#2E7D32","#B0306A","#8A6A00","#3D5A80","#9C3D2E"];
 const boxColor=id=>{const bx=allBoxes().find(b=>b.id===id);const i=bx?boxes(bx.org).indexOf(bx):0;return BOX_COLORS[(i<0?0:i)%BOX_COLORS.length];};
 const dot=id=>`<span class="bdot" style="background:${boxColor(id)}"></span>`;
 const boxName=id=>(allBoxes().find(b=>b.id===id)||{}).name||"Box";
 const target=it=>has(L.cfg.targets[it.id])?num(L.cfg.targets[it.id]):it.base;
-const rate=it=>Object.assign({},it.base,L.cfg.rates[it.id]||{});
+/* tournament supplies: court-size tiers (saved inside cfg.rates so old per-day rates no longer apply) */
+const TIER_NAMES=["League Play","Small","Medium","Large"];
+const TIER_DEFAULT=2; // locations without a court count use Medium
+const rates=()=>(L.cfg.rates&&typeof L.cfg.rates==="object"&&!Array.isArray(L.cfg.rates))?L.cfg.rates:(L.cfg.rates={});
+/* upper court limit of League Play, Small, Medium; anything above is Large */
+const TIER_CUTS=[14,40,80];
+const tierCuts=()=>{const c=(rates()._tiers4||{}).upTo||[];return TIER_CUTS.map((d,i)=>has(c[i])?num(c[i]):d);};
+const tierAmts=it=>{const o=(rates()[it.id]||{}).tier4;return TIER_NAMES.map((n,i)=>o&&has(o[i])?num(o[i]):it.base.tier[i]);};
+const tierOf=c=>{const k=tierCuts().findIndex(x=>c<=x);return k<0?TIER_NAMES.length-1:k;};
+function tierLabel(i){const c=tierCuts();const lo=i?c[i-1]+1:0;
+  return `${TIER_NAMES[i]} (${i===0?`up to ${c[0]}`:i===c.length?`${lo}+`:`${lo}–${c[i]}`} courts)`;}
+/* court count per AT location, null when not entered */
+const locCourts=t=>{const n=Math.max(0,Math.floor(num(t.locs)));const a=String(t.courts??"").split(",");
+  return Array.from({length:n},(_,i)=>{const v=(a[i]||"").trim();return v===""?null:num(v);});};
+function courtsText(t){const c=locCourts(t);if(!c.length)return "0 AT locations";
+  return `${c.length} AT location${c.length>1?"s":""}`+(c.some(x=>x!==null)?` (${c.map(x=>x??"?").join(", ")} courts)`:", courts not set");}
 
 /* ---------- tournaments & sessions ---------- */
 const tours=()=>L.cfg.tournaments||[];
@@ -434,11 +543,11 @@ function boxState(bid,id,beforeTid,org){
 }
 const shortfall=(bid,it)=>{const s=boxState(bid,it.id);return s?Math.max(0,target(it)-s.v):0;};
 const shortfallIn=(bid,it,org)=>{const s=boxState(bid,it.id,null,org);return s?Math.max(0,target(it)-s.v):0;};
-const uncounted=bid=>boxItemsAll().filter(it=>!boxState(bid,it.id)).length;
+const uncounted=bid=>boxItemsFor(bid).filter(it=>!boxState(bid,it.id)).length;
+/* each AT location gets its tier amount for the whole tournament; locations without a court count use Medium */
 function courtNeed(t,it){
-  const r=rate(it);
-  if(it.ice) return num(r.days)>0?Math.ceil(num(r.rate)*num(t.days)/num(r.days)-1e-9):0;
-  return Math.ceil(num(r.rate)*num(t.days)*num(t.locs)-1e-9);
+  const A=tierAmts(it);
+  return Math.ceil(locCourts(t).reduce((s,c)=>s+A[c===null?TIER_DEFAULT:tierOf(c)],0)-1e-9);
 }
 /* plan: each box counted once (first upcoming tournament it's assigned to) */
 function plan(list){
@@ -452,7 +561,7 @@ function needs(list){
   excessItemsAll().forEach(it=>{
     let n=0;
     if(it.court)list.forEach(t=>n+=courtNeed(t,it));
-    else if(!it.extra||it.inBoxes)P.boxes.forEach(b=>n+=shortfallIn(b,it,orgOf(list)));
+    else P.boxes.forEach(b=>{if(inBox(it,b))n+=shortfallIn(b,it,orgOf(list));});
     m[it.id]=n;
   });
   return m;
@@ -488,7 +597,7 @@ function locLabel(loc){
 function setCount(loc,item,phase,v){
   const k=K(loc,item,phase);
   if(has(v)) L.counts[k]=num(v); else delete L.counts[k];
-  L.pending[k]={loc,item,phase,value:has(v)?num(v):null,locName:locLabel(loc),itemName:(itm(item)||{name:item}).name};
+  L.pending[k]={loc,item,phase,value:has(v)?num(v):null,locName:locLabel(loc),itemName:item===LOCK?"Count completed":(itm(item)||{name:item}).name};
   persist();scheduleFlush();
 }
 function scheduleFlush(ms=1200){if(LOCAL){L.pending={};persist();return;}clearTimeout(flushTimer);flushTimer=setTimeout(flush,ms);}
@@ -634,13 +743,13 @@ function softRefresh(){
 function rowHTML(it,withTarget){
   const t=target(it);
   return `<div class="item" data-id="${esc(it.id)}">
-    <div><span class="name">${esc(it.name)}${(()=>{const bits=[it.note,!withTarget&&unitPlural(it)?`count in ${unitPlural(it)}`:""].filter(Boolean);return bits.length?`<span class="note">${esc(bits.join(", "))}</span>`:"";})()}</span><div class="status"></div><button class="clr" hidden aria-label="Clear ${esc(it.name)} count">Clear count</button></div>
+    <div><span class="name">${esc(it.name)}${(()=>{const bits=[it.note,!withTarget&&unitPlural(it)?`count in ${unitPlural(it)}`:""].filter(Boolean);return bits.length?`<span class="note">${esc(bits.join(", "))}</span>`:"";})()}</span><div class="status"></div><button class="clr" hidden tabindex="-1" aria-label="Clear ${esc(it.name)} count">Clear count</button></div>
     <div class="ctrl">
-      ${withTarget?`<button class="target" aria-label="Mark ${esc(it.name)} full"></button>`:""}
+      ${withTarget?`<button class="target" tabindex="-1" aria-label="Mark ${esc(it.name)} full"></button>`:""}
       <div class="step">
-        <button data-d="-1" aria-label="One less ${esc(it.name)}">−</button>
+        <button data-d="-1" tabindex="-1" aria-label="One less ${esc(it.name)}">−</button>
         <input type="number" inputmode="decimal" min="0" step="any" placeholder="–" aria-label="${esc(it.name)} count">
-        <button data-d="1" aria-label="One more ${esc(it.name)}">+</button>
+        <button data-d="1" tabindex="-1" aria-label="One more ${esc(it.name)}">+</button>
       </div>
     </div>
     ${it.ice&&!withTarget?`<div class="extra">Notes<input type="text" data-comment placeholder="e.g., extra for outdoor courts"></div>`:""}
@@ -652,6 +761,7 @@ function wireRows(loc,phaseFn){
   main().querySelectorAll(".item").forEach(row=>{
     const id=row.dataset.id, inp=row.querySelector(".step input");
     const cur=()=>get(loc,id,phaseFn());
+    if(isLocked(loc)){row.querySelectorAll("input,button").forEach(x=>x.disabled=true);}
     row.querySelectorAll(".step button").forEach(b=>b.onclick=()=>{
       const c=cur();const d=num(b.dataset.d);
       const n=c===null?(d>0?1:0):Math.max(0,c+d);
@@ -699,7 +809,7 @@ function updateRows(skipRow){
     }
     row.classList.remove("ok","flag");if(k!=="todo")row.classList.add(k);
     row.querySelector(".status").textContent=msg;
-    row.querySelector(".clr").hidden=c===null;
+    row.querySelector(".clr").hidden=c===null||isLocked(loc);
     const qm=!ql||(it.name+" "+(it.note||"")+" "+secTitle(it)).toLowerCase().includes(ql);
     row.classList.toggle("hide",!qm||(L.filter!=="all"&&k!==L.filter));
     const sk=row.closest("section").dataset.s;
@@ -713,13 +823,14 @@ function updateRows(skipRow){
   const tl=$("#tally");if(tl)tl.textContent=`${ok+fl} of ${ok+fl+todo} counted, ${fl} ${isExcessLoc(loc)?"short":"to restock"}`;
   const m=$("#meter");if(m){m.children[0].style.width=(ok/total*100)+"%";m.children[1].style.width=(fl/total*100)+"%";}
 }
-function sectionsHTML(sections,withTarget){
-  return sections.map((sec,i)=>{
-    const list=sec.court?COURT_ITEMS:sec.extra?(withTarget?extras().filter(x=>x.inBoxes):extras()):STD_BOX_ITEMS.filter(x=>x.sec===BOX_SECTIONS.indexOf(sec));
-    return `<section class="grp${sec.extra?" extra-grp":""}" data-s="${i}"><div class="grp-h">${esc(sec.title)}<small></small></div>
-    ${list.length?`<div class="list">${list.map(it=>rowHTML(it,withTarget&&!(it.extra&&!it.base))).join("")}</div>`:""}
-    ${sec.extra?`<p class="hint" style="margin:${list.length?"8px":"0"} 4px 8px">${withTarget?"Items added as “kept in every box” show here.":"Anything not on the standard list."}</p><button class="btn ghost" style="width:100%" data-add-extra>Add extra supply</button>`:""}
-    </section>`;}).join("");
+/* items grouped by category; the Extra supplies group always shows so anyone can add one */
+function groupsHTML(list,withTarget,court){
+  const groups=[...(court?[{title:COURT_SECTION.title,items:COURT_ITEMS}]:[]),
+    ...catOrder(list).map(c=>({title:c,items:list.filter(it=>catOf(it)===c),extra:c===EXTRA_SECTION.title}))].filter(g=>g.items.length||g.extra);
+  return groups.map((g,i)=>`<section class="grp${g.extra?" extra-grp":""}" data-s="${i}"><div class="grp-h">${esc(g.title)}<small></small></div>
+    ${g.items.length?`<div class="list">${g.items.map(it=>rowHTML(it,withTarget&&target(it)>0)).join("")}</div>`:""}
+    ${g.extra?`<p class="hint" style="margin:${g.items.length?"8px":"0"} 4px 8px">${withTarget?"Items added as “kept in every box” show here.":"Anything not on the standard list."}</p><button class="btn ghost" style="width:100%" data-add-extra>Add extra supply</button>`:""}
+    </section>`).join("");
 }
 let query="";
 function searchHTML(ph){return `<div class="search"><input type="search" id="q" placeholder="${esc(ph)}" value="${esc(query)}" autocomplete="off" enterkeyhint="search" aria-label="${esc(ph)}"></div>`;}
@@ -739,6 +850,33 @@ function wireChips(){main().querySelectorAll(".chips button").forEach(b=>b.oncli
 
 /* ---------- clearing ---------- */
 const phaseName=p=>p==="pre"?"pre-tournament":"post-tournament";
+/* "Save and complete": stored as a count row (item _done) so it syncs for everyone without admin rights */
+const LOCK="_done";
+const lockedAt=loc=>get(loc,LOCK,"post");
+const isLocked=loc=>lockedAt(loc)!==null;
+function lockBannerHTML(loc){
+  if(!isLocked(loc))return "";
+  const d=new Date(lockedAt(loc));
+  return `<div class="done"><span>✓ Completed ${esc(d.toLocaleDateString(undefined,{month:"short",day:"numeric"}))}. Counts are locked.</span>${isAdmin()?`<button class="link" id="reopen">Reopen</button>`:""}</div>`;
+}
+function completeHTML(loc,ph){
+  if(isLocked(loc))return "";
+  if(ph!=="post")return `<p class="hint" style="margin:0 4px 8px">Switch to Post-tournament to save and complete this count.</p>`;
+  return `<button class="btn primary complete" id="complete">Save and complete post-tournament count</button>`;
+}
+function wireComplete(loc,what,where,list){
+  const c=$("#complete");
+  if(c)c.onclick=async()=>{
+    const left=list.filter(it=>get(loc,it.id,"post")===null).length;
+    if(!await confirmDlg(`Complete ${what}?`,`${left?`${left} item${left>1?"s have":" has"} no post-tournament count yet. `:""}This saves and locks the pre- and post-tournament counts for ${what} at ${where}, for everyone.${isAdmin()?"":" Only an admin can reopen it."}`,"Save and complete"))return;
+    setCount(loc,LOCK,"post",Date.now());clearTimeout(flushTimer);flush();render();toast("Count saved and completed");
+  };
+  const r=$("#reopen");
+  if(r)r.onclick=async()=>{
+    if(!await confirmDlg(`Reopen ${what}?`,`Counts for ${what} at ${where} can be changed again.`,"Reopen"))return;
+    setCount(loc,LOCK,"post",null);render();toast("Count reopened");
+  };
+}
 async function clearPhase(loc,phase,what,where){
   const keys=Object.keys(L.counts).filter(k=>k.startsWith(loc+"|")&&k.endsWith("|"+phase));
   if(!keys.length){toast(`No ${phaseName(phase)} counts to clear`);return;}
@@ -764,7 +902,7 @@ function renderBox(id){
   const loc=sessLoc(tid,id);
   main().innerHTML=`<div class="card boxcard" style="--bc:${boxColor(id)}">
       <label class="field tsel">${curOrg()} tournament<select id="tsel">${tourOptions(tid,true,curOrg())}</select></label>
-      ${t?`<p class="sub" style="margin-top:6px">${[t.date?fmtDate(t.date):"Date not set",`${num(t.locs)} AT locations`,`${num(t.days)} days`].join(", ")}</p>`:""}
+      ${t?`<p class="sub" style="margin-top:6px">${[t.date?fmtDate(t.date):"Date not set",courtsText(t),`${num(t.days)} days`].join(", ")}</p>`:""}
       <div class="boxtitle" style="margin-top:14px">${dot(id)}<h2>${esc(boxName(id))}</h2></div>
       <div class="seg" role="group" aria-label="Count type">
         <button data-p="pre" aria-pressed="${ph==="pre"}">Pre-tournament</button>
@@ -775,11 +913,12 @@ function renderBox(id){
       <p class="hint" id="tally"></p>
       ${chipsHTML("Restock")}
       ${searchHTML("Search this box")}
-      <div class="row-between" style="margin-top:6px"><span></span><button class="link danger" id="newcount">Clear this box’s ${ph}-tournament count</button></div>
-    </div>${sectionsHTML(BOX_TAB_SECTIONS,true)}`;
+      ${isLocked(loc)?lockBannerHTML(loc):`<div class="row-between" style="margin-top:6px"><span></span><button class="link danger" id="newcount">Clear this box’s ${ph}-tournament count</button></div>`}
+    </div>${groupsHTML(boxItemsFor(id),true,false)}${completeHTML(loc,ph)}`;
   $("#tsel").onchange=e=>{pickTour(e.target.value);render();};
   main().querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{L.phase[id]=b.dataset.p;persist();renderCtx();renderBox(id);});
-  $("#newcount").onclick=()=>clearPhase(loc,ph,boxName(id),sessName(tid));
+  if($("#newcount"))$("#newcount").onclick=()=>clearPhase(loc,ph,boxName(id),sessName(tid));
+  wireComplete(loc,boxName(id),sessName(tid),boxItemsFor(id));
   wireChips();wireRows(loc,()=>L.phase[id]||"post");wireAddExtra(true);wireSearch(()=>updateRows());updateRows();
 }
 /* ---------- extra supplies ---------- */
@@ -803,32 +942,88 @@ $("#x-save").onclick=async()=>{
   }else L.cfg.extras=[...(L.cfg.extras||[]),x];
   persist();closeDlg($("#xdlg"));render();toast(`Added ${name}`);
 };
-function extrasSetupHTML(){
-  const X=L.cfg.extras||[];
-  return `<div class="card" data-qgroup><h3>Extra supplies</h3><p class="sub">Items added beyond the standard list. Anyone counting can add them from a box or the Excess tab.</p>
-    ${X.length?X.map(x=>`<div class="rate" data-x="${esc(x.id)}" data-q="${esc(x.name)}">
-      <div class="grid2"><label class="field">Item<input data-xk="name" value="${esc(x.name)}"></label><label class="field">Unit<input data-xk="note" value="${esc(x.note)}" placeholder="e.g., box"></label></div>
-      <div class="row-between" style="margin-top:8px">
-        <label class="rl" style="margin:0"><input type="checkbox" data-xk="inBoxes" ${x.inBoxes?"checked":""} style="width:18px;height:18px;accent-color:var(--court)"> In every box, full box has <input data-xk="level" type="number" inputmode="decimal" min="0" step="any" value="${esc(x.level)}"></label>
-        <button class="link danger" data-xdel>Remove</button></div></div>`).join(""):`<p class="empty">None yet.</p>`}
-    <button class="btn ghost" style="width:100%;margin-top:10px" data-add-extra>Add extra supply</button></div>`;
+function itemSummary(it){
+  const B=boxes();const n=B.filter(b=>inBox(it,b.id));
+  const where=!n.length?"Excess only":n.length===B.length?"All boxes":n.map(b=>b.name).join(", ");
+  return n.length?`${where} · ${qty(it,target(it))}`:where;
 }
-function wireExtrasSetup(){
-  main().querySelectorAll("[data-x]").forEach(row=>{
-    const xid=row.dataset.x, X=()=>(L.cfg.extras||[]).find(e=>e.id===xid);
-    row.querySelectorAll("[data-xk]").forEach(inp=>{
-      const k=inp.dataset.xk;
-      inp[inp.type==="checkbox"?"onchange":"oninput"]=()=>{const x=X();if(!x)return;x[k]=inp.type==="checkbox"?inp.checked:k==="level"?num(inp.value):inp.value;saveCfg("extras");renderTabs();};
+function itemEditor(it){
+  const cats=catOrder(items());const others=items().filter(x=>x.id!==it.id);
+  return `<details class="ied" data-i="${esc(it.id)}" data-q="${esc(it.name+" "+catOf(it))}" ${L.openItem===it.id?"open":""}>
+    <summary><span class="ev-n">${esc(it.name)}</span><span class="ev-s">${esc(itemSummary(it))}</span></summary>
+    <div class="ied-b">
+      ${it.extra?`<div class="grid2"><label class="field">Name<input data-iname value="${esc(it.name)}"></label><label class="field">Unit<input data-iunit value="${esc(it.unit)}" placeholder="e.g., box"></label></div>`:""}
+      <div class="grid2" style="margin-top:${it.extra?10:0}px">
+        <label class="field">Category<select data-icat>${cats.map(c=>`<option ${c===catOf(it)?"selected":""}>${esc(c)}</option>`).join("")}<option value="__new">New category…</option></select></label>
+        <label class="field">Full box has<span class="lvl-in"><input data-lvl="${esc(it.id)}" type="number" inputmode="decimal" step="any" min="0" value="${target(it)}"><small>${esc(unitWord(it,target(it)))}</small></span></label>
+      </div>
+      <p class="hint" style="margin-top:10px">In these ${curOrg()} boxes (none checked = excess only)</p>
+      <div class="boxpick">${boxes().map(b=>{const on=inBox(it,b.id);return `<label${on?` class="on" style="--bc:${boxColor(b.id)}"`:""}><input type="checkbox" data-ibox="${b.id}" ${on?"checked":""}>${dot(b.id)}${esc(b.name)}</label>`;}).join("")}</div>
+      <div class="row-between" style="margin-top:12px;flex-wrap:nowrap">
+        <select data-imerge ${inputStyle} aria-label="Merge ${esc(it.name)} into"><option value="">Merge into another item…</option>${others.map(o=>`<option value="${esc(o.id)}">${esc(o.name)}</option>`).join("")}</select>
+        <button class="btn ghost sm" data-imerge-go>Merge</button>
+      </div>
+      <div class="row-between" style="margin-top:8px"><span></span><button class="link danger" data-idel>Remove item</button></div>
+    </div></details>`;
+}
+function itemsSetupHTML(){
+  const list=items();
+  const removed=[...STD_BOX_ITEMS,...EXONLY_ITEMS].filter(it=>LAY().removed.includes(it.id));
+  return `<div class="card" data-qgroup><h3>Items and box contents</h3>
+    <p class="sub">Tap an item to change its category, which boxes carry it, and how many a full box has. You can also merge a duplicate into another item, or remove it.</p>
+    ${catOrder(list).map(c=>{const L2=list.filter(it=>catOf(it)===c);return L2.length?`<div data-qgroup><p class="cat-h">${esc(c)}</p><div class="items">${L2.map(itemEditor).join("")}</div></div>`:"";}).join("")}
+    <button class="btn ghost" style="width:100%;margin-top:12px" data-add-extra>Add item</button>
+    ${removed.length?`<p class="hint" style="margin-top:14px">Removed items</p><ul class="mini">${removed.map(it=>`<li data-q="${esc(it.name)}"><span>${esc(it.name)}</span><button class="link" data-irestore="${esc(it.id)}">Restore</button></li>`).join("")}</ul>`:""}
+  </div>`;
+}
+/* add one item's counts into another (sums each location/phase), then hide the first */
+function mergeItem(from,to){
+  Object.keys(L.counts).forEach(k=>{const [loc,item,phase]=k.split("|");if(item!==from)return;
+    const v=num(L.counts[k]);const t=get(loc,to,phase);setCount(loc,to,phase,fmt((t||0)+v));setCount(loc,from,phase,null);});
+  if(L.cfg.comments[from]&&!L.cfg.comments[to]){L.cfg.comments[to]=L.cfg.comments[from];saveCfg("comments",0);}
+  const l=LAY();l.merged[from]=to;delete l.cat[from];delete l.boxes[from];
+  if((L.cfg.extras||[]).some(x=>x.id===from)){L.cfg.extras=L.cfg.extras.filter(x=>x.id!==from);saveCfg("extras",0);}
+  saveCfg("rates",0);
+}
+function wireItemsSetup(){
+  main().querySelectorAll("details.ied").forEach(d=>d.addEventListener("toggle",()=>{if(!d.isConnected)return;
+    if(d.open){L.openItem=d.dataset.i;main().querySelectorAll("details.ied[open]").forEach(o=>{if(o!==d)o.open=false;});}
+    else if(L.openItem===d.dataset.i)L.openItem="";persist();}));
+  main().querySelectorAll("details.ied").forEach(d=>{
+    const id=d.dataset.i, it=()=>itm(id), X=()=>(L.cfg.extras||[]).find(e=>e.id===id);
+    const nm=d.querySelector("[data-iname]");if(nm)nm.oninput=()=>{const x=X();if(x){x.name=nm.value;saveCfg("extras");}};
+    if(nm)nm.onchange=laterSetup;
+    const un=d.querySelector("[data-iunit]");if(un)un.oninput=()=>{const x=X();if(x){x.note=un.value;x.unit=un.value;saveCfg("extras");}};
+    d.querySelector("[data-icat]").onchange=e=>{
+      let c=e.target.value;const l=LAY();
+      if(c==="__new"){c=(prompt("New category name")||"").trim();if(!c){laterSetup();return;}
+        if(c===COURT_SECTION.title){toast("That name is reserved");laterSetup();return;}
+        if(!catOrder(items()).includes(c))l.cats.push(c);}
+      if(c===defCat(it()))delete l.cat[id];else l.cat[id]=c;
+      saveCfg("rates",0);laterSetup();toast(`Moved ${it().name} to ${c}`);
+    };
+    d.querySelectorAll("[data-ibox]").forEach(cb=>cb.onchange=()=>{
+      const cur=allBoxes().filter(b=>inBox(it(),b.id)).map(b=>b.id).filter(b=>b!==cb.dataset.ibox);
+      if(cb.checked)cur.push(cb.dataset.ibox);
+      LAY().boxes[id]=cur;saveCfg("rates",0);laterSetup();
     });
-    row.querySelector("[data-xdel]").onclick=async()=>{
-      const x=X();if(!x)return;
-      if(!await confirmDlg(`Remove ${x.name}?`,"It disappears from every box and the Excess tab. Its counts stay in the Google Sheet.","Remove"))return;
-      L.cfg.extras=L.cfg.extras.filter(e=>e.id!==xid);saveCfg("extras",0);render();
+    d.querySelector("[data-imerge-go]").onclick=async()=>{
+      const to=d.querySelector("[data-imerge]").value;if(!to){toast("Choose the item to merge into");return;}
+      const a=it(),b=itm(to);
+      if(!await confirmDlg(`Merge ${a.name} into ${b.name}?`,`${a.name}’s counts are added to ${b.name} for every box and tournament, and ${a.name} disappears from the list. This can’t be undone.`,"Merge"))return;
+      mergeItem(id,to);L.openItem=to;persist();render();toast(`Merged into ${b.name}`);
+    };
+    d.querySelector("[data-idel]").onclick=async()=>{
+      const a=it();
+      if(!await confirmDlg(`Remove ${a.name}?`,"It disappears from every box and the Excess tab. Its past counts stay in the Google Sheet.","Remove"))return;
+      if(X()){L.cfg.extras=L.cfg.extras.filter(e=>e.id!==id);saveCfg("extras",0);}
+      else{LAY().removed.push(id);saveCfg("rates",0);}
+      render();toast(`Removed ${a.name}`);
     };
   });
+  main().querySelectorAll("[data-irestore]").forEach(b=>b.onclick=()=>{const l=LAY();l.removed=l.removed.filter(x=>x!==b.dataset.irestore);saveCfg("rates",0);render();});
   wireAddExtra(false);
 }
-
 /* ---------- excess tab ---------- */
 function renderExcess(){
   const tid=curTour();
@@ -848,11 +1043,12 @@ function renderExcess(){
     <div class="meter" id="meter"><i class="m-ok"></i><i class="m-flag"></i></div><p class="hint" id="tally"></p>
     ${chipsHTML("Short")}
     ${searchHTML("Search excess supplies")}
-    <div class="row-between" style="margin-top:6px"><span></span><button class="link danger" id="newcount">Clear the excess ${ph}-tournament count</button></div>
-  </div>${sectionsHTML(EXCESS_SECTIONS,false)}`;
+    ${isLocked(loc)?lockBannerHTML(loc):`<div class="row-between" style="margin-top:6px"><span></span><button class="link danger" id="newcount">Clear the excess ${ph}-tournament count</button></div>`}
+  </div>${groupsHTML(items(),false,true)}${completeHTML(loc,ph)}`;
   $("#tsel").onchange=e=>{pickTour(e.target.value);render();};
   main().querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{L.phase.excess=b.dataset.p;persist();renderCtx();renderExcess();});
-  $("#newcount").onclick=()=>clearPhase(loc,ph,`${org} excess`,sessName(tid));
+  if($("#newcount"))$("#newcount").onclick=()=>clearPhase(loc,ph,`${org} excess`,sessName(tid));
+  wireComplete(loc,`${org} excess`,sessName(tid),excessItemsAll());
   wireChips();wireRows(loc,()=>L.phase.excess||"post");wireAddExtra(false);wireSearch(()=>updateRows());updateRows();
 }
 
@@ -864,11 +1060,11 @@ function orderRows(list){
     return {it,need,ex,order:Math.max(0,need-(ex||0))};}).filter(r=>r.need>0);
 }
 function shortList(bid){
-  const need=boxItemsAll().map(it=>[it,shortfall(bid,it)]).filter(([,n])=>n>0);
+  const need=boxItemsFor(bid).map(it=>[it,shortfall(bid,it)]).filter(([,n])=>n>0);
   return need.length?`<ul class="mini">${need.map(([it,n])=>`<li data-q="${esc(it.name)}"><span>${esc(it.name)}</span><b>${esc(qty(it,n))}</b></li>`).join("")}</ul>`:`<p class="empty">Nothing to restock.</p>`;
 }
 function lastCountNote(bid){
-  let last=null;sessions().forEach(s=>{if(boxItemsAll().some(it=>get(sessLoc(s,bid),it.id,"pre")!==null||get(sessLoc(s,bid),it.id,"post")!==null))last=s;});
+  let last=null;sessions().forEach(s=>{if(boxItemsFor(bid).some(it=>get(sessLoc(s,bid),it.id,"pre")!==null||get(sessLoc(s,bid),it.id,"post")!==null))last=s;});
   return last?`Based on the latest count, from ${esc(sessName(last))}`:"Not counted yet";
 }
 function renderRestock(){
@@ -881,7 +1077,7 @@ function renderRestock(){
   if(!UP.length)h+=`<div class="card"><p class="empty">No upcoming ${curOrg()} tournaments. Set dates for your tournaments in Setup and assign boxes.</p></div>`;
   P.perTour.forEach(({t,boxes:bx,dup})=>{
     h+=`<div class="card accent"><h3>${esc(t.name||"Untitled tournament")}</h3>
-      <p class="sub">${[t.org,fmtDate(t.date),`${num(t.locs)} AT locations`,`${num(t.days)} days`].filter(Boolean).join(", ")}</p>`;
+      <p class="sub">${[t.org,fmtDate(t.date),courtsText(t),`${num(t.days)} days`].filter(Boolean).join(", ")}</p>`;
     if(!bx.length&&!dup.length)h+=`<p class="warn">No boxes assigned.</p>`;
     bx.forEach(b=>{const u=uncounted(b);
       h+=`<p class="bhead">${dot(b)}${esc(boxName(b))}</p><p class="hint" style="margin:2px 0 0">${lastCountNote(b)}</p>`+shortList(b)+(u?`<p class="warn">${u} item${u>1?"s":""} never counted</p>`:"");});
@@ -889,7 +1085,9 @@ function renderRestock(){
     const cn=COURT_ITEMS.map(it=>[it,courtNeed(t,it)]).filter(([,n])=>n>0);
     h+=`<p class="bhead">Tournament supplies</p>`+
       (cn.length?`<ul class="mini">${cn.map(([it,n])=>`<li data-q="${esc(it.name)}"><span>${esc(it.name)}</span><b>${esc(qty(it,n))}</b></li>`).join("")}</ul>`
-        :`<p class="empty">Add AT locations and days in Setup.</p>`);
+        :`<p class="empty">Add AT locations and court counts in Setup.</p>`);
+    const unset=locCourts(t).filter(c=>c===null).length;
+    if(unset)h+=`<p class="warn">Court count not set for ${unset} location${unset>1?"s":""}, so ${unset>1?"they use":"it uses"} Medium amounts. Set courts in Setup.</p>`;
     if(L.cfg.comments["ice-bags"])h+=`<p class="hint">Ice bags: ${esc(L.cfg.comments["ice-bags"])}</p>`;
     h+=`</div>`;
   });
@@ -898,10 +1096,22 @@ function renderRestock(){
   if(UP.length){
     h+=`<div class="card"><h3>Order list</h3><p class="sub">Total needed${list.length===1?` for ${esc(list[0].name||"this tournament")}`:` for all upcoming ${curOrg()} tournaments`}, minus ${curOrg()} excess on hand.</p>`+
       (O.length?`<div class="tw"><table class="t"><thead><tr><th>Item</th><th class="n">Need</th><th class="n">Excess</th><th class="n">Order</th></tr></thead><tbody>${
-        O.map(r=>`<tr data-q="${esc(r.it.name)}"><td>${esc(r.it.name)}${unitPlural(r.it)?`<span class="note">${esc(unitPlural(r.it))}</span>`:""}</td><td class="n">${fmt(r.need)}</td><td class="n">${r.ex===null?"–":r.ex}</td><td class="n ${r.order?"hot":""}">${fmt(r.order)}</td></tr>`).join("")}</tbody></table></div>`
+        O.map(r=>`<tr data-q="${esc(r.it.name)}"><td>${esc(r.it.name)}<span class="note">${esc([HS[r.it.id]?"#"+HS[r.it.id][0]:"",unitPlural(r.it)].filter(Boolean).join(" · "))}</span></td><td class="n">${fmt(r.need)}</td><td class="n">${r.ex===null?"–":r.ex}</td><td class="n ${r.order?"hot":""}">${fmt(r.order)}</td></tr>`).join("")}</tbody></table></div>`
         :`<p class="empty">Nothing needed yet.</p>`)+
       (exTodo?`<p class="warn">${exTodo} needed item${exTodo>1?"s":""} not counted in excess yet</p>`:"")+
       `<div class="row-between" style="margin-top:12px"><button class="btn ghost sm" id="copy">Copy order list</button></div></div>`;
+  }
+  const NG=nextGroup();
+  if(NG.length){
+    const R=hsRows(NG),ok=R.filter(r=>r.code),miss=R.filter(r=>!r.code);
+    h+=`<div class="card accent"><h3>Henry Schein order</h3><p class="sub">For the next tournament${NG.length>1?"s":""}: ${esc(NG.map(orgLabel).join(" and "))}. Quantities are what’s needed minus ${curOrg()} excess on hand, rounded up to Henry Schein selling units.</p>`+
+      (ok.length?`<div class="tw"><table class="t"><thead><tr><th>Item #</th><th>Item</th><th class="n">Qty</th></tr></thead><tbody>${
+        ok.map(r=>`<tr><td>${esc(r.code)}</td><td>${esc(r.it.name)}<span class="note">${esc(r.desc)}</span></td><td class="n hot">${r.qty}</td></tr>`).join("")}</tbody></table></div>`
+        :`<p class="empty">Nothing to order from Henry Schein.</p>`)+
+      (miss.length?`<p class="warn">No Henry Schein item number for: ${esc(miss.map(r=>`${r.it.name} (${qty(r.it,r.order)})`).join(", "))}</p>`:"")+
+      (R.some(r=>r.ex===null)?`<p class="warn">Count ${curOrg()} excess first so quantities don’t include what you already have.</p>`:"")+
+      `<div class="row-between" style="margin-top:12px;justify-content:flex-start"><button class="btn primary sm" id="hs-csv" ${ok.length?"":"disabled"}>Download order file (CSV)</button><button class="btn ghost sm" id="hs-copy" ${ok.length?"":"disabled"}>Copy item numbers</button></div>
+      <p class="hint">Upload the file in Henry Schein’s Quick Order / order upload. Columns are Item Code, Quantity, Description.</p></div>`;
   }
   const others=boxes().filter(b=>!plan(upcoming()).boxes.includes(b.id));
   if(others.length){
@@ -913,14 +1123,26 @@ function renderRestock(){
   if($("#plan"))$("#plan").onchange=e=>{L.plan=e.target.value;persist();renderRestock();};
   wireSearch(applySearch);applySearch();
   if($("#copy"))$("#copy").onclick=()=>copyText(orderText());
+  if($("#hs-csv"))$("#hs-csv").onclick=()=>{try{const G=nextGroup();saveFile(`henry-schein-order-${slug(groupNames(G))}-${stamp()}.csv`,hsCSV(G),"text/csv;charset=utf-8");}catch(e){toast("Couldn’t build the order file");}};
+  if($("#hs-copy"))$("#hs-copy").onclick=()=>copyText(hsRows(nextGroup()).filter(r=>r.code).map(r=>`${r.code}\t${r.qty}`).join("\n"));
 }
+/* Henry Schein order lines: inventory units converted to Henry Schein selling units */
+function hsRows(list){
+  return orderRows(list).filter(r=>r.order>0).map(r=>{const h=HS[r.it.id];if(!h)return Object.assign({code:null},r);
+    const per=h[2]||1;return Object.assign({code:h[0],desc:h[1],qty:Math.ceil(r.order/per-1e-9)},r);});
+}
+function hsCSV(list){
+  const o=[["Item Code","Quantity","Description"],...hsRows(list).filter(r=>r.code).map(r=>[r.code,r.qty,r.desc])];
+  return o.map(r=>r.map(csvCell).join(",")).join("\r\n");
+}
+const slug=n=>String(n||"").replace(/[^a-z0-9]+/gi,"-").replace(/^-|-$/g,"").toLowerCase()||"order";
 function orderText(){
   const list=planList();const lines=[`${curOrg()} order list`];
   plan(list).perTour.forEach(({t,boxes:bx})=>lines.push(`${orgLabel(t)}: ${bx.map(boxName).join(", ")||"no boxes"}`));
   lines.push("");
   const O=orderRows(list).filter(r=>r.order>0);
   if(!O.length)lines.push("Nothing to order.");
-  O.forEach(r=>lines.push(`${r.it.name}: ${qty(r.it,r.order)}`));
+  O.forEach(r=>lines.push(`${r.it.name}${HS[r.it.id]?` (#${HS[r.it.id][0]})`:""}: ${qty(r.it,r.order)}`));
   return lines.join("\n");
 }
 async function copyText(t){
@@ -942,6 +1164,8 @@ function tourCard(t){
       <label class="field">Days<input data-k="days" type="number" inputmode="numeric" min="0" value="${esc(t.days)}" placeholder="0"></label>
     </div>
     ${t.name==="World Challenge"?`<p class="hint">Possibly 4 AT locations.</p>`:""}
+    ${locCourts(t).length?`<p class="hint" style="margin-top:12px">Courts at each AT location</p><div class="grid3" style="margin-top:4px">${locCourts(t).map((c,i)=>
+      `<label class="field">Location ${i+1}<input data-court="${i}" type="number" inputmode="numeric" min="0" value="${c??""}" placeholder="Courts"></label>`).join("")}</div>`:""}
     <p class="hint" style="margin-top:12px">Boxes going to this tournament</p>
     <div class="boxpick">${boxes().map(b=>{const mine=(t.boxes||[]).includes(b.id);
       return `<label${mine?` class="on" style="--bc:${boxColor(b.id)}"`:""}><input type="checkbox" data-box="${b.id}" ${mine?"checked":""}>${dot(b.id)}${esc(b.name)}</label>`;}).join("")||`<span class="empty">Add a box first.</span>`}</div>
@@ -961,11 +1185,27 @@ function eventSummary(list){
   if(nod===list.length)return "Date not set";
   return `${list.length} date${list.length>1?"s":""}, none upcoming`;
 }
+/* erase every count at these locations; synced like any other count edit */
 async function clearLocs(locs){
-  if(LOCAL)return true;
-  try{for(const loc of locs){const r=await api({action:"clear",loc});if(!r.ok)throw r;}return true;}catch(e){return false;}
+  const keys=Object.keys(L.counts).filter(k=>locs.includes(k.split("|")[0]));
+  keys.forEach(k=>{const [loc,item,phase]=k.split("|");setCount(loc,item,phase,null);});
+  if(keys.length&&!LOCAL){clearTimeout(flushTimer);await flush();}
+  return true;
 }
+/* remember which field had focus so a redraw doesn't kick you out of it */
+function focusKey(el){
+  if(!el||!main().contains(el))return null;
+  const own=["data-k","data-court","data-box","data-cut","data-tier","data-lvl","data-xk","data-icat","data-ibox","data-iname","data-iunit","data-imerge"].find(a=>el.hasAttribute(a));
+  let sel=el.id?"#"+CSS.escape(el.id):own?`[${own}="${CSS.escape(el.getAttribute(own))}"]`:el.classList.contains("bname")?".bname":null;
+  if(sel&&el.hasAttribute("data-lvl"))return sel;
+  if(!sel)return null;
+  const box=el.parentElement&&el.parentElement.closest("[data-t],[data-r],[data-b],[data-x],[data-i]");
+  if(box){const a=["data-t","data-r","data-b","data-x","data-i"].find(x=>box.hasAttribute(x));sel=`[${a}="${CSS.escape(box.getAttribute(a))}"] ${sel}`;}
+  return sel;
+}
+const laterSetup=()=>setTimeout(()=>{if(L.tab==="setup")renderSetup();},0);
 function renderSetup(){
+  const fk=focusKey(document.activeElement);
   const A=isAdmin();
   let h=`<div class="card"><h2>Setup</h2>
     <div class="grid2" style="margin-top:10px"><label class="field wide">Your name<input id="s-name" value="${esc(L.name)}" placeholder="Shown with your counts"></label></div>
@@ -995,17 +1235,20 @@ function renderSetup(){
       ${boxes().map(b=>`<div class="row-between" style="margin-top:10px;flex-wrap:nowrap;gap:8px" data-b="${b.id}" data-q="${esc(b.name)}">${dot(b.id)}
         <input class="bname" value="${esc(b.name)}" ${inputStyle}>
         <button class="link danger" data-del-b>Remove</button></div>`).join("")}</div>`;
-    h+=`<div class="card" data-qgroup><h3>Tournament supplies</h3><p class="sub">Pulled from excess inventory for each tournament, based on its AT locations and days.</p>
-      ${COURT_ITEMS.map(it=>{const r=rate(it);return `<div class="rate" data-r="${it.id}" data-q="${esc(it.name)}"><span class="name">${esc(it.name)}</span><div class="rl">${it.ice
-        ?`<input data-rk="rate" type="number" inputmode="decimal" step="any" min="0" value="${esc(r.rate)}"> ${esc(unitPlural(it))} per <input data-rk="days" type="number" inputmode="decimal" step="any" min="0" value="${esc(r.days)}"> tournament days`
-        :`<input data-rk="rate" type="number" inputmode="decimal" step="any" min="0" value="${esc(r.rate)}"> ${esc(unitPlural(it))} per day per AT location`}</div></div>`;}).join("")}</div>`;
-    h+=`<div class="card" data-qgroup><h3>Full box contents</h3><p class="sub">How many of each item a fully stocked box has.</p>
-      ${BOX_SECTIONS.map((sec,si)=>`<div data-qgroup><p style="margin:14px 0 2px;font-weight:600">${esc(sec.title)}</p>${STD_BOX_ITEMS.filter(i=>i.sec===si).map(it=>
-        `<div class="lvl" data-q="${esc(it.name+" "+sec.title)}"><span>${esc(it.name)}</span><span class="lvl-in"><input data-lvl="${it.id}" type="number" inputmode="decimal" step="any" min="0" value="${target(it)}"><small>${esc(unitWord(it,target(it)))}</small></span></div>`).join("")}</div>`).join("")}</div>`;
-    h+=extrasSetupHTML();
+    const cuts=tierCuts();
+    h+=`<div class="card" data-qgroup><h3>Tournament supplies</h3><p class="sub">Each AT location gets a set amount for the whole tournament, based on how many courts it covers. Enter the courts for each location on the tournament above. A location with no court count uses Medium.</p>
+      <p class="hint" style="margin-top:10px">Most courts in each size (anything more is Large)</p>
+      <div class="grid3" style="margin-top:4px">${cuts.map((c,i)=>`<label class="field">${TIER_NAMES[i]}<input data-cut="${i}" type="number" inputmode="numeric" min="0" value="${c}"></label>`).join("")}</div>
+      <p class="hint" id="tier-hint">${esc(TIER_NAMES.map((n,i)=>tierLabel(i)).join(" · "))}</p>
+      <div class="tw" style="margin-top:8px"><table class="t"><thead><tr><th>Per AT location</th>${TIER_NAMES.map(n=>`<th class="n">${n}</th>`).join("")}</tr></thead><tbody>
+      ${COURT_ITEMS.map(it=>`<tr data-r="${it.id}" data-q="${esc(it.name)}"><td>${esc(it.name)}<span class="note">${esc(unitPlural(it))}</span></td>${tierAmts(it).map((v,i)=>
+        `<td class="n"><input data-tier="${i}" type="number" inputmode="decimal" step="any" min="0" value="${v}" aria-label="${esc(it.name)}, ${TIER_NAMES[i]}"></td>`).join("")}</tr>`).join("")}
+      </tbody></table></div><p class="hint">Totals are rounded up for each tournament.</p></div>`;
+    h+=itemsSetupHTML();
     if(!LOCAL)h+=`<div class="card"><button class="link danger" id="s-lock">Lock setup on this device</button></div>`;
   }
   main().innerHTML=h;
+  if(fk){const e=main().querySelector(fk);if(e)e.focus({preventScroll:true});}
   if(!LOCAL&&$("#s-sync"))$("#s-sync").textContent=$("#sync").textContent;
   $("#s-name").oninput=e=>{L.name=e.target.value.trim();persist();};
   if($("#s-refresh"))$("#s-refresh").onclick=async()=>{await flush();await load();render();toast("Up to date");};
@@ -1019,6 +1262,7 @@ function renderSetup(){
     return;
   }
   if($("#s-lock"))$("#s-lock").onclick=()=>{L.admin="";persist();render();};
+  wireItemsSetup();
   wireSearch(applySearch);applySearch();
   const sorg=curOrg();
   main().querySelectorAll("details.ev").forEach(d=>d.addEventListener("toggle",()=>{if(!d.isConnected)return;if(d.open){L.openEv=sorg+"|"+d.dataset.ev;main().querySelectorAll("details.ev").forEach(o=>{if(o.dataset.ev!==d.dataset.ev&&o.open)o.open=false;});}else if(L.openEv===sorg+"|"+d.dataset.ev)L.openEv="";persist();}));
@@ -1034,12 +1278,17 @@ function renderSetup(){
     const tid=card.dataset.t, T=()=>tourById(tid);
     card.querySelectorAll("[data-k]").forEach(inp=>{
       inp.oninput=()=>{const t=T();if(!t)return;t[inp.dataset.k]=inp.value;saveCfg("tournaments");renderTabs();};
-      if(inp.dataset.k==="date"||inp.dataset.k==="name")inp.onchange=()=>{const t=T();if(t&&inp.dataset.k==="name")L.openEv=sorg+"|"+t.name;saveCfg("tournaments");persist();renderSetup();};
+      if(inp.dataset.k==="locs")inp.onchange=()=>{saveCfg("tournaments");laterSetup();};
+      if(inp.dataset.k==="name")inp.onchange=()=>{const t=T();if(t)L.openEv=sorg+"|"+t.name;saveCfg("tournaments");persist();laterSetup();};
+      /* dates: redraw only after leaving the field, so the date picker stays open */
+      if(inp.dataset.k==="date")inp.onblur=()=>{if(inp.value!==inp.defaultValue){saveCfg("tournaments");persist();laterSetup();}};
     });
+    card.querySelectorAll("[data-court]").forEach(inp=>inp.oninput=()=>{
+      const t=T();if(!t)return;const a=locCourts(t).map(c=>c??"");a[+inp.dataset.court]=inp.value.trim();t.courts=a.join(",");saveCfg("tournaments");});
     card.querySelectorAll("[data-box]").forEach(cb=>cb.onchange=()=>{
       const t=T();if(!t)return;const b=cb.dataset.box;
       t.boxes=(t.boxes||[]).filter(x=>x!==b);if(cb.checked)t.boxes.push(b);
-      saveCfg("tournaments",0);renderSetup();
+      saveCfg("tournaments",0);laterSetup();
     });
     card.querySelector("[data-del-t]").onclick=async()=>{
       const t=T();if(!t)return;
@@ -1051,6 +1300,9 @@ function renderSetup(){
   });
   $("#add-b").onclick=()=>{const o=curOrg();const id=(o==="JVA"?"b":"s")+Date.now().toString(36);
     const n=boxes().length;const name=o==="JVA"?`Box ${n+1}`:`Box ${String.fromCharCode(65+n)}`;
+    const others=boxes(o).map(b=>b.id);const l=LAY();let ch=false;
+    Object.keys(l.boxes).forEach(k=>{const a=l.boxes[k];if(Array.isArray(a)&&others.length&&others.every(b=>a.includes(b))){a.push(id);ch=true;}});
+    if(ch)saveCfg("rates",0);
     allBoxes().push({id,name,org:o});saveCfg("boxes",0);render();};
   main().querySelectorAll("[data-b]").forEach(row=>{
     const bid=row.dataset.b, B=()=>allBoxes().find(x=>x.id===bid);
@@ -1065,8 +1317,12 @@ function renderSetup(){
       saveCfg("boxes",0);saveCfg("tournaments",0);render();
     };
   });
-  main().querySelectorAll("[data-r]").forEach(row=>row.querySelectorAll("[data-rk]").forEach(inp=>inp.oninput=()=>{
-    const id=row.dataset.r;L.cfg.rates[id]=Object.assign({},L.cfg.rates[id]||{},{[inp.dataset.rk]:inp.value});saveCfg("rates");}));
+  main().querySelectorAll("[data-r]").forEach(row=>row.querySelectorAll("[data-tier]").forEach(inp=>inp.oninput=()=>{
+    const id=row.dataset.r;const A=tierAmts(itm(id));A[+inp.dataset.tier]=inp.value===""?0:Math.max(0,num(inp.value));
+    rates()[id]=Object.assign({},rates()[id]||{},{tier4:A});saveCfg("rates");}));
+  main().querySelectorAll("[data-cut]").forEach(inp=>inp.oninput=()=>{
+    const c=tierCuts();c[+inp.dataset.cut]=Math.max(0,num(inp.value));rates()._tiers4={upTo:c};saveCfg("rates");
+    $("#tier-hint").textContent=TIER_NAMES.map((n,i)=>tierLabel(i)).join(" · ");});
   main().querySelectorAll("[data-lvl]").forEach(inp=>inp.oninput=()=>{
     L.cfg.targets[inp.dataset.lvl]=inp.value===""?null:num(inp.value);saveCfg("targets");
     const it=itm(inp.dataset.lvl);inp.nextElementSibling.textContent=unitWord(it,target(it));});
@@ -1082,10 +1338,10 @@ function saveFile(name,data,type){
 const csvCell=v=>{v=String(v??"");return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v;};
 function boxRows(tid,bid){
   const loc=sessLoc(tid,bid);
-  return boxItemsAll().map(it=>{const pre=get(loc,it.id,"pre"),post=get(loc,it.id,"post"),t=target(it),cur=post!==null?post:pre;
+  return boxItemsFor(bid).map(it=>{const pre=get(loc,it.id,"pre"),post=get(loc,it.id,"post"),t=target(it),cur=post!==null?post:pre;
     return {it,full:t,pre,post,used:pre!==null&&post!==null?fmt(Math.max(0,pre-post)):"",restock:cur!==null&&cur<t?fmt(t-cur):""};});
 }
-const sessionHasCounts=(tid,bid)=>boxItemsAll().some(it=>get(sessLoc(tid,bid),it.id,"pre")!==null||get(sessLoc(tid,bid),it.id,"post")!==null);
+const sessionHasCounts=(tid,bid)=>boxItemsFor(bid).some(it=>get(sessLoc(tid,bid),it.id,"pre")!==null||get(sessLoc(tid,bid),it.id,"post")!==null);
 function buildCSV(){
   const o=[];
   o.push(["Medical Supply Inventory"],["Exported",new Date().toLocaleString(),"By",L.name||""],[]);
@@ -1099,10 +1355,10 @@ function buildCSV(){
         o.push([org,t?t.name:sessName(tid),t?t.date:"","Excess",secTitle(it),it.name,unitPlural(it),"",pre??"",post??"",pre!==null&&post!==null?fmt(Math.max(0,pre-post)):"",""]);});
   }));
   o.push([],["Tournaments"],["Organization","Tournament","Start date","AT locations","Days","Boxes"]);
-  sortedTours().forEach(t=>o.push([tourOrg(t),t.name,t.date,num(t.locs),num(t.days),(t.boxes||[]).map(boxName).join("; ")]));
+  sortedTours().forEach(t=>o.push([tourOrg(t),t.name,t.date,courtsText(t),num(t.days),(t.boxes||[]).map(boxName).join("; ")]));
   ORGS.forEach(org=>{const UP=upcoming(org);
-    o.push([],[`${org} order list (all upcoming ${org} tournaments)`],["Item","Unit","Needed","In excess","To order"]);
-    orderRows(UP).forEach(r=>o.push([r.it.name,unitPlural(r.it),fmt(r.need),r.ex===null?"":r.ex,fmt(r.order)]));
+    o.push([],[`${org} order list (all upcoming ${org} tournaments)`],["Item","Henry Schein #","Unit","Needed","In excess","To order"]);
+    orderRows(UP).forEach(r=>o.push([r.it.name,HS[r.it.id]?HS[r.it.id][0]:"",unitPlural(r.it),fmt(r.need),r.ex===null?"":r.ex,fmt(r.order)]));
   });
   ORGS.forEach(org=>{const G=nextGroup(org);const N=needs(G);
     o.push([],[`${org} excess inventory (latest count)`,G.length?`Needed = ${G.map(tourLabel).join(" and ")}`:""],["Section","Item","Unit","On hand","Needed for next tournament","Short","Notes"]);
@@ -1121,7 +1377,7 @@ function buildPDF(){
   doc.setFont("helvetica","bold");doc.setFontSize(18);doc.text("Medical Supply Inventory",Lm,y);y+=20;
   doc.setFontSize(13);doc.text(pt(tid?(t?orgLabel(t):sessName(tid)):"No tournament selected"),Lm,y);y+=16;
   doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(100);
-  if(t){doc.text(pt([fmtDate(t.date),`${num(t.locs)} AT locations`,`${num(t.days)} days`].filter(Boolean).join(", ")),Lm,y);y+=14;}
+  if(t){doc.text(pt([fmtDate(t.date),courtsText(t),`${num(t.days)} days`].filter(Boolean).join(", ")),Lm,y);y+=14;}
   doc.text(pt(`Exported ${new Date().toLocaleString()}${L.name?` by ${L.name}`:""}`),Lm,y);y+=26;
   const center={halign:"center"};
   if(tid){
@@ -1132,7 +1388,7 @@ function buildPDF(){
   }
   H(`${curOrg()} order list (all upcoming ${curOrg()} tournaments)`);
   const O=orderRows(upcoming());
-  if(O.length)tbl(["Item","Needed","In excess","To order"],O.map(r=>[r.it.name,qty(r.it,r.need),r.ex===null?"-":r.ex,qty(r.it,r.order)]),
+  if(O.length)tbl(["Item","Needed","In excess","To order"],O.map(r=>[r.it.name+(HS[r.it.id]?` (#${HS[r.it.id][0]})`:""),qty(r.it,r.need),r.ex===null?"-":r.ex,qty(r.it,r.order)]),
     {columnStyles:{2:center,3:{fontStyle:"bold",textColor:[192,57,30]}}});
   else{y+=6;doc.setFont("helvetica","normal");doc.setFontSize(10);doc.text("Nothing needed.",Lm,y);y+=22;}
   const NG=nextGroup();const N=needs(NG);
@@ -1165,6 +1421,25 @@ $("#k-go").onclick=async()=>{
   }catch(e){$("#k-err").textContent="Couldn’t reach the inventory. Check your connection.";}
 };
 $("#connect").addEventListener("cancel",e=>e.preventDefault());
+
+/* ---------- Enter key: submit dialogs and codes, otherwise move to the next box ---------- */
+document.addEventListener("keydown",e=>{
+  const el=e.target;
+  if(e.key!=="Enter"||e.isComposing||el.tagName!=="INPUT"||el.type==="checkbox")return;
+  e.preventDefault();
+  const dlg=el.closest("dialog");
+  if(dlg){
+    const ins=[...dlg.querySelectorAll("input:not([type=checkbox])")].filter(i=>i.offsetParent);
+    const next=ins[ins.indexOf(el)+1];
+    if(next&&!next.value){next.focus();return;}
+    const go=dlg.querySelector(".dlg-actions .btn.primary");if(go)go.click();return;
+  }
+  if(el.id==="s-admin"){$("#s-unlock").click();return;}
+  if(el.type==="search"){el.blur();return;}
+  const ins=[...main().querySelectorAll("input:not([type=checkbox])")].filter(i=>i.offsetParent&&!i.disabled);
+  const next=ins[ins.indexOf(el)+1];
+  if(next){next.focus();if(next.select&&next.type!=="date")try{next.select();}catch(x){}}else el.blur();
+});
 
 /* ---------- start ---------- */
 render();
