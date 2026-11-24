@@ -607,10 +607,12 @@ const orgOf=list=>list.length?tourOrg(list[0]):curOrg();
 /* ---------- sync ---------- */
 let loadedOnce=false;
 let syncState=LOCAL?"local":"idle", flushing=false, flushTimer=null, lastFlushDone=0;
-function setSync(s){syncState=s;const el=document.getElementById("sync");
+/* Setup changes that keep failing to save; while any are, the header must not say "Synced" */
+const cfgFail={};
+function setSync(s){if(s==="idle"&&Object.keys(cfgFail).length)s="cfgerror";syncState=s;const el=document.getElementById("sync");
   const map={local:"On this device",idle:L.lastSync?`Synced ${new Date(L.lastSync).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}`:"Connecting…",
-    saving:"Saving…",offline:"Offline, saved on this phone",error:"Not synced"};
-  el.textContent=map[s]||"";el.classList.toggle("bad",s==="offline"||s==="error");}
+    saving:"Saving…",offline:"Offline, saved on this phone",error:"Not synced",cfgerror:"Setup changes not saved"};
+  el.textContent=map[s]||"";el.classList.toggle("bad",s==="offline"||s==="error"||s==="cfgerror");}
 async function api(body){
   const res=await fetch(API_URL,{method:"POST",redirect:"follow",body:JSON.stringify(Object.assign({},body,{code:L.code,admin:L.admin,by:L.name}))});
   return res.json();
@@ -641,7 +643,7 @@ async function flush(){
   }catch(e){
     if(e&&e.error==="bad_code"){lockOut();}
     else{setSync("offline");clearTimeout(flushTimer);flushTimer=setTimeout(flush,15000);}
-  }finally{flushing=false;if(Object.keys(L.pending).length&&syncState==="idle")scheduleFlush(300);}
+  }finally{flushing=false;if(Object.keys(L.pending).length&&(syncState==="idle"||syncState==="cfgerror"))scheduleFlush(300);}
 }
 async function load(){
   if(LOCAL){setSync("local");return true;}
@@ -672,10 +674,10 @@ function saveCfg(key,ms=700){
     const ver=cfgDirty[key];
     setSync("saving");
     try{const r=await api({action:"config",key,value:L.cfg[key]});
-      if(!r.ok){if(r.error==="bad_admin"){delete cfgDirty[key];L.admin="";persist();render();toast("Setup is locked. Enter the admin code again.");return;}else throw r;}
+      if(!r.ok){if(r.error==="bad_admin"){delete cfgDirty[key];delete cfgFail[key];L.admin="";persist();render();toast("Setup is locked. Enter the admin code again.");return;}else throw r;}
       if(cfgDirty[key]===ver)delete cfgDirty[key];
-      lastCfgDone=Date.now();L.lastSync=Date.now();setSync("idle");
-    }catch(e){setSync("offline");toast("Setup change didn’t save. Retrying…");saveCfg(key,15000);cfgDirty[key]--;}
+      delete cfgFail[key];lastCfgDone=Date.now();L.lastSync=Date.now();setSync("idle");
+    }catch(e){cfgFail[key]=(e&&e.error)||"no connection";setSync("offline");toast("Setup change didn’t save. Retrying…");saveCfg(key,15000);cfgDirty[key]--;}
   },ms);
 }
 function lockOut(){L.code="";persist();showConnect("That team code didn’t work. Check it and try again.");}
@@ -765,6 +767,7 @@ function softRefresh(){
   const before=L.tab;renderTabs();
   if(L.tab!==before){render();return;}
   renderOrgBar();
+  if(L.tab.startsWith("box:")&&curTour()&&!typing&&!!orphanGroups().length!==!!$("#orph-warn")){render();return;}
   if((L.tab.startsWith("box:")&&curTour())||L.tab==="excess"){renderCtx();updateRows();}
   else if(!typing)render();
 }
@@ -1020,6 +1023,7 @@ function renderBox(id){
       <p class="hint">${HINT[ph]}</p>
       <div class="meter" id="meter"><i class="m-ok"></i><i class="m-flag"></i></div>
       <p class="hint" id="tally"></p>
+      ${orphanGroups().length?`<p class="warn" id="orph-warn">Some counts in the sheet aren’t attached to a current tournament or box. ${isAdmin()?"Check Setup → Data check to move them.":"Ask an admin to check Setup → Data check."}</p>`:""}
       ${chipsHTML(ph==="restock"?"Still short":"Restock")}
       ${searchHTML("Search this box")}
       ${copyPreHTML(loc,ph,boxItemsFor(id))}${fillHTML(loc,ph,boxItemsFor(id))}
@@ -1161,6 +1165,54 @@ function renderExcess(){
   if($("#newcount"))$("#newcount").onclick=()=>clearPhase(loc,ph,`${org} excess`,sessName(tid));
   wireComplete(loc,ph,`${org} excess`,sessName(tid),excessItemsAll());wireCopyPre(loc,excessItemsAll());
   wireChips();wireRows(loc,()=>excessPhase());wireAddExtra(false);wireSearch(()=>updateRows());updateRows();
+}
+
+/* ---------- data check: counts not attached to a current tournament/box ---------- */
+function locParts(loc){
+  if(loc==="excess"||loc==="excess-3step")return {legacyExcess:true};
+  if(!loc.includes("~"))return {tid:LEGACY,bid:loc};
+  const i=loc.indexOf("~");return {tid:loc.slice(0,i),bid:loc.slice(i+1)};
+}
+function orphanGroups(){
+  const g={};
+  Object.keys(L.counts).forEach(k=>{const [loc,item,phase]=k.split("|");const P=locParts(loc);if(P.legacyExcess)return;
+    const tOk=P.tid===LEGACY||!!tourById(P.tid),bOk=P.bid==="excess"||allBoxes().some(b=>b.id===P.bid);
+    if(tOk&&bOk)return;
+    const x=g[loc]||(g[loc]={loc,tid:P.tid,bid:P.bid,tOk,bOk,keys:[],items:new Set()});x.keys.push(k);if(item!==LOCK)x.items.add(item);});
+  return Object.values(g);
+}
+function orphanLabel(o){
+  const t=o.tOk?sessName(o.tid):`Missing tournament (${o.tid})`;
+  const b=o.bid==="excess"?"Excess":o.bOk?boxName(o.bid):`missing box (${o.bid})`;
+  return `${t} / ${b}`;
+}
+function dataCheckHTML(){
+  const O=orphanGroups(),org=curOrg(),F=Object.keys(cfgFail);
+  const per=sortedTours().filter(t=>tourOrg(t)===org).map(t=>({t,n:Object.keys(L.counts).filter(k=>k.startsWith(t.id+"~")&&k.split("|")[1]!==LOCK).length})).filter(x=>x.n||isPast(x.t));
+  return `<div class="card${O.length||F.length?" accent":""}" data-qgroup><h3>Data check</h3>
+    <p class="sub">${L.lastSync?`Last loaded from the Google Sheet ${new Date(L.lastSync).toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}. `:""}${Object.keys(L.counts).length} counts in the sheet${Object.keys(L.pending).length?`, ${Object.keys(L.pending).length} on this device waiting to send`:""}.</p>
+    ${F.length?`<p class="warn">These setup changes from this device haven’t saved to the sheet: ${esc(F.join(", "))} (${esc(Object.values(cfgFail).join(", "))}). Other devices won’t see them until they do.</p>`:""}
+    ${O.length?`<p class="warn" style="margin-top:10px">${O.reduce((a,o)=>a+o.keys.filter(k=>k.split("|")[1]!==LOCK).length,0)} counts aren’t attached to any current tournament or box, so they don’t show anywhere. Move each group to where it belongs.</p>
+      ${O.map((o,i)=>`<div class="inst" style="margin:10px 0 0" data-orph="${i}" data-q="orphan">
+        <b>${esc(orphanLabel(o))}</b><p class="hint" style="margin:2px 0 8px">${o.items.size} item${o.items.size===1?"":"s"}: ${esc([...o.items].slice(0,6).map(id=>(itm(id)||{name:id}).name).join(", "))}${o.items.size>6?"…":""}</p>
+        <div class="grid2"><label class="field">Tournament<select data-otour>${tourOptions(o.tOk?o.tid:"",false,org)}</select></label>
+          <label class="field">Box<select data-obox>${boxes(org).map(b=>`<option value="${b.id}" ${b.id===o.bid?"selected":""}>${esc(b.name)}</option>`).join("")}<option value="excess" ${o.bid==="excess"?"selected":""}>Excess</option></select></label></div>
+        <button class="btn primary sm" data-omove style="margin-top:10px;width:100%">Move these counts</button></div>`).join("")}`
+      :`<p class="hint" style="margin-top:8px">✓ Every count is attached to a tournament and box.</p>`}
+    ${per.length?`<p class="hint" style="margin-top:12px">Counts logged per ${org} tournament</p><ul class="mini">${per.map(x=>`<li data-q="${esc(x.t.name)}"><span>${esc(tourLabel(x.t))}</span><span>${x.n}</span></li>`).join("")}</ul>`:""}
+  </div>`;
+}
+function wireDataCheck(){
+  const O=orphanGroups();
+  main().querySelectorAll("[data-orph]").forEach(el=>{const o=O[+el.dataset.orph];if(!o)return;
+    el.querySelector("[data-omove]").onclick=async()=>{
+      const tid=el.querySelector("[data-otour]").value,bid=el.querySelector("[data-obox]").value;
+      const to=bid==="excess"?excessSessLoc(tid,curOrg()):sessLoc(tid,bid);
+      const clash=o.keys.filter(k=>{const [,item,phase]=k.split("|");return get(to,item,phase)!==null;}).length;
+      if(!await confirmDlg(`Move to ${sessName(tid)} / ${bid==="excess"?"Excess":boxName(bid)}?`,`Moves ${o.keys.length} entr${o.keys.length===1?"y":"ies"} there for everyone.${clash?` ${clash} already ha${clash===1?"s":"ve"} a count there; those keep the existing count and the old one is dropped.`:""}`,"Move counts"))return;
+      o.keys.forEach(k=>{const [,item,phase]=k.split("|");const v=L.counts[k];if(get(to,item,phase)===null)setCount(to,item,phase,v);setCount(o.loc,item,phase,null);});
+      clearTimeout(flushTimer);flush();render();toast("Counts moved");
+    };});
 }
 
 /* ---------- overview tab ---------- */
@@ -1403,6 +1455,7 @@ function renderSetup(){
     if(needsSeed())seedTournaments();
     const org=curOrg();
     h+=`<div class="card">${searchHTML("Search tournaments, boxes, and supplies")}<p class="empty" id="q-none" hidden>Nothing matches.</p></div>`;
+    h+=dataCheckHTML();
     h+=`<div class="card" data-qgroup><h3>${org} tournaments</h3>
       <p class="sub">Every date shows up in the logging dropdowns. Counts are kept separately for each date, so you can look back anytime.</p>
       <div class="events">${eventGroups(org).map(g=>`<details class="ev" data-ev="${esc(g.name)}" data-q="${esc(g.name)}" ${L.openEv===org+"|"+g.name?"open":""}>
@@ -1444,7 +1497,7 @@ function renderSetup(){
     return;
   }
   if($("#s-lock"))$("#s-lock").onclick=()=>{L.admin="";persist();render();};
-  wireItemsSetup();
+  wireItemsSetup();wireDataCheck();
   wireSearch(applySearch);applySearch();
   const sorg=curOrg();
   main().querySelectorAll("details.ev").forEach(d=>d.addEventListener("toggle",()=>{if(!d.isConnected)return;if(d.open){L.openEv=sorg+"|"+d.dataset.ev;main().querySelectorAll("details.ev").forEach(o=>{if(o.dataset.ev!==d.dataset.ev&&o.open)o.open=false;});}else if(L.openEv===sorg+"|"+d.dataset.ev)L.openEv="";persist();}));
