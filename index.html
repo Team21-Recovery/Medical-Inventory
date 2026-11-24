@@ -217,6 +217,20 @@ details.ied[open]{background:var(--court-soft)}
 .done{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--ok-bg);color:var(--ok);font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .done .link{padding:0}
 .complete{width:100%;margin:4px 0 8px}
+.stat{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:12px}
+.stat div{background:var(--bg);border-radius:10px;padding:10px 12px}
+.stat b{display:block;font:700 26px/1.1 "Barlow Condensed","Arial Narrow",sans-serif}
+.stat span{font-size:13px;color:var(--muted)}
+.pill{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:2px 8px;margin:2px 4px 2px 0;background:var(--bg);color:var(--muted);white-space:nowrap}
+.pill.on{background:var(--ok-bg);color:var(--ok)}
+.pill.warn{background:var(--flag-bg);color:var(--flag)}
+details.rdy{border-top:1px solid var(--line)}
+details.rdy:first-of-type{border-top:0}
+details.rdy summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;cursor:pointer}
+details.rdy summary::-webkit-details-marker{display:none}
+.t.wide th,.t.wide td{white-space:nowrap}
+.t.wide td:first-child,.t.wide th:first-child{position:sticky;left:0;background:var(--surface);white-space:normal;min-width:130px}
+.t .zero{color:var(--todo)}
 .item input:disabled,.item button:disabled{opacity:.55;cursor:default}
 </style>
 </head>
@@ -480,12 +494,23 @@ function excessState(id,org,beforeTid){
   org=org||curOrg();let S=sessions(org);
   if(beforeTid){const i=S.indexOf(beforeTid);S=i<0?S:S.slice(0,i);}
   for(let i=S.length-1;i>=0;i--){const loc=excessSessLoc(S[i],org);
-    const p=get(loc,id,"post");if(p!==null)return {v:p,tid:S[i]};
-    const q=get(loc,id,"pre");if(q!==null)return {v:q,tid:S[i]};}
+    const p=get(loc,id,"post");if(p!==null)return {v:p,tid:S[i],phase:"post"};
+    const q=get(loc,id,"pre");if(q!==null)return {v:q,tid:S[i],phase:"pre"};}
   if(!beforeTid){const old=get(excessLoc(org),id,"now");if(old!==null)return {v:old,tid:LEGACY};}
   return null;
 }
-const excessOnHand=(id,org)=>{const s=excessState(id,org);return s?s.v:null;};
+/* total moved from excess into this org's boxes for a tournament, by phase (refill or restock) */
+const toBoxes=(tid,org,id,ph)=>boxes(org).reduce((s,b)=>s+(get(sessLoc(tid,b.id),id,ph)||0),0);
+/* excess on hand = latest excess count, minus what boxes were refilled/restocked from it after that count */
+const excessOnHand=(id,org)=>{org=org||curOrg();const s=excessState(id,org);if(!s)return null;if(s.tid===LEGACY)return s.v;
+  const out=(s.phase==="pre"?toBoxes(s.tid,org,id,"refill"):0)+toBoxes(s.tid,org,id,"restock");return fmt(Math.max(0,s.v-out));};
+/* usage for one tournament: box = pre + refills - post; excess = pre - post - refills sent to boxes */
+function boxUsed(tid,bid,id){const loc=sessLoc(tid,bid);const a=get(loc,id,"pre"),z=get(loc,id,"post");
+  return a===null||z===null?null:fmt(Math.max(0,a+(get(loc,id,"refill")||0)-z));}
+function excessUsed(tid,org,id){const loc=excessSessLoc(tid,org);const a=get(loc,id,"pre"),z=get(loc,id,"post");
+  return a===null||z===null?null:fmt(Math.max(0,a-z-toBoxes(tid,org,id,"refill")));}
+function usedAt(tid,org,id){const v=[...boxes(org).map(b=>boxUsed(tid,b.id,id)),excessUsed(tid,org,id)].filter(x=>x!==null);
+  return v.length?fmt(v.reduce((a,b)=>a+b,0)):null;}
 const upcoming=(org)=>sortedTours().filter(t=>tourOrg(t)===(org||curOrg())&&isUpcoming(t));
 const LEGACY="legacy";
 const hasLegacy=(org)=>(org||curOrg())==="JVA"&&Object.keys(L.counts).some(k=>{const loc=k.split("|")[0];return !isExcessLoc(loc)&&!loc.includes("~");});
@@ -536,7 +561,8 @@ function boxState(bid,id,beforeTid,org){
   let S=sessions(org||(bx&&bx.org));
   if(beforeTid){const i=S.indexOf(beforeTid);S=i<0?S:S.slice(0,i);}
   for(let i=S.length-1;i>=0;i--){
-    const loc=sessLoc(S[i],bid);const p=get(loc,id,"post");if(p!==null)return {v:p,tid:S[i],phase:"post"};
+    const loc=sessLoc(S[i],bid);const p=get(loc,id,"post");
+    if(p!==null){const r=get(loc,id,"restock");return {v:p+(r||0),tid:S[i],phase:r!==null?"restock":"post"};}
     const q=get(loc,id,"pre");if(q!==null)return {v:q,tid:S[i],phase:"pre"};
   }
   return null;
@@ -678,7 +704,7 @@ function tourOptions(selected,includeLegacy=true,org){
 function validTab(){
   const t=L.tab;const vis=curBoxes();
   if(t.startsWith("box:")&&vis.some(b=>"box:"+b.id===t))return t;
-  if(["excess","restock","setup"].includes(t))return t;
+  if(["excess","overview","restock","setup"].includes(t))return t;
   return vis[0]?"box:"+vis[0].id:"excess";
 }
 function renderTabs(){
@@ -686,18 +712,19 @@ function renderTabs(){
   const el=$("#tabs");
   el.innerHTML=curBoxes().map(b=>`<button role="tab" data-tab="box:${b.id}" aria-selected="${L.tab==="box:"+b.id}">${dot(b.id)}${esc(b.name)}</button>`).join("")+
     `<button role="tab" data-tab="excess" aria-selected="${L.tab==="excess"}">Excess</button><span class="sep"></span>`+
+    `<button role="tab" data-tab="overview" aria-selected="${L.tab==="overview"}">Overview</button>`+
     `<button role="tab" data-tab="restock" aria-selected="${L.tab==="restock"}">Restock</button>`+
     `<button role="tab" data-tab="setup" aria-selected="${L.tab==="setup"}">Setup</button>`;
   el.querySelectorAll("button").forEach(b=>b.onclick=()=>{if(L.tab!==b.dataset.tab)query="";L.tab=b.dataset.tab;persist();render();window.scrollTo({top:0});});
 }
 function renderCtx(){
   const el=$("#ctx");
-  if(L.tab==="excess"&&curTour()){const ph=L.phase.excess||"post";el.hidden=false;el.style.background="#46525F";
-    el.innerHTML=`<div class="ctx-in"><b>${curOrg()} Excess</b><span>${esc(sessName(curTour()))}, ${ph}-tournament</span></div>`;return;}
+  if(L.tab==="excess"&&curTour()){const ph=excessPhase();el.hidden=false;el.style.background="#46525F";
+    el.innerHTML=`<div class="ctx-in"><b>${curOrg()} Excess</b><span>${esc(sessName(curTour()))}, ${phaseName(ph)}</span></div>`;return;}
   if(!L.tab.startsWith("box:")||!curTour()){el.hidden=true;return;}
-  const id=L.tab.slice(4),ph=L.phase[id]||"post";
+  const id=L.tab.slice(4),ph=boxPhase(id);
   el.hidden=false;el.style.background=boxColor(id);
-  el.innerHTML=`<div class="ctx-in"><b>${esc(boxName(id))}</b><span>${curOrg()} ${esc(sessName(curTour()))}, ${ph==="pre"?"pre":"post"}-tournament</span></div>`;
+  el.innerHTML=`<div class="ctx-in"><b>${esc(boxName(id))}</b><span>${curOrg()} ${esc(sessName(curTour()))}, ${phaseName(ph)}</span></div>`;
 }
 function ensureBox3(){
   if(L.box3Added||!isAdmin()||(!LOCAL&&!loadedOnce))return;
@@ -726,6 +753,7 @@ function render(){
   const t=L.tab;
   if(t.startsWith("box:"))renderBox(t.slice(4));
   else if(t==="excess")renderExcess();
+  else if(t==="overview")renderOverview();
   else if(t==="restock")renderRestock();
   else renderSetup();
 }
@@ -770,7 +798,9 @@ function wireRows(loc,phaseFn){
     inp.oninput=()=>{setCount(loc,id,phaseFn(),inp.value===""?null:Math.max(0,num(inp.value)));updateRows(row);};
     row.querySelector(".clr").onclick=()=>{setCount(loc,id,phaseFn(),null);updateRows();toast(`Cleared ${itm(id).name}`);};
     const tb=row.querySelector(".target");
-    if(tb)tb.onclick=()=>{setCount(loc,id,phaseFn(),target(itm(id)));updateRows();};
+    if(tb)tb.onclick=()=>{const ph=phaseFn(),it=itm(id);
+      if(ph==="restock"){const b=get(loc,id,"post");if(b===null){toast("Count it post-tournament first");return;}setCount(loc,id,ph,fmt(Math.max(0,target(it)-b)));}
+      else setCount(loc,id,ph,target(it));updateRows();};
     const cm=row.querySelector("[data-comment]");
     if(cm){cm.value=L.cfg.comments[id]||"";cm.oninput=()=>{L.cfg.comments[id]=cm.value;saveCfg("comments",1200);};}
   });
@@ -794,16 +824,30 @@ function updateRows(skipRow){
       else if(c<need){k="flag";bits.push(`Short ${qty(it,need-c)} (need ${fmt(need)})`);}
       else{k="ok";bits.push(need?`Covers the ${fmt(need)} needed`:"Counted");}
       const pre=get(loc,it.id,"pre");
-      if(phase==="post"&&pre!==null){bits.push(`started with ${fmt(pre)}`);if(c!==null)bits.push(`used ${fmt(Math.max(0,pre-c))}`);}
+      if(phase==="post"&&pre!==null){const tb2=tid===LEGACY?0:toBoxes(tid,curOrg(),it.id,"refill");bits.push(`started with ${fmt(pre)}`);
+        if(tb2)bits.push(`${fmt(tb2)} went into boxes`);if(c!==null)bits.push(`used ${fmt(Math.max(0,pre-c-tb2))}`);}
       if(phase==="pre"&&c===null&&tid!==LEGACY){const prev=excessState(it.id,curOrg(),tid);if(prev)bits.push(`last count ${fmt(prev.v)} after ${sessName(prev.tid)}`);}
       msg=bits.join(", ");if(msg)msg=msg[0].toUpperCase()+msg.slice(1);
     }else{
       const t=target(it);
       const tbn=row.querySelector(".target");
-      if(tbn){const w=unitWord(it,t);tbn.innerHTML=`${fmt(t)}${w?`<small>${esc(w)}</small>`:""}`;tbn.classList.toggle("bare",!w);}
+      const post=get(loc,it.id,"post"),rf=get(loc,it.id,"refill");
+      const pinkN=phase==="restock"?(post===null?null:Math.max(0,t-post)):t;
+      if(tbn){const w=unitWord(it,pinkN??t);tbn.innerHTML=`${phase==="restock"?"+":""}${fmt(pinkN??0)}${w?`<small>${esc(w)}</small>`:""}`;tbn.classList.toggle("bare",!w);
+        tbn.hidden=phase==="refill"||(phase==="restock"&&!pinkN);tbn.setAttribute("aria-label",phase==="restock"?`Fill ${it.name} to full`:`Mark ${it.name} full`);}
       const pre=get(loc,it.id,"pre");const bits=[];
-      if(c!==null){ if(!t){k="ok";bits.push("Counted");} else if(c<t){k="flag";bits.push(`Restock ${qty(it,t-c)}`);} else {k="ok";bits.push("Full");} }
-      if(phase==="post"&&pre!==null){bits.push(`started with ${fmt(pre)}`);if(c!==null)bits.push(`used ${fmt(Math.max(0,pre-c))}`);}
+      if(phase==="refill"){
+        if(c!==null){k="ok";bits.push(`Added ${qty(it,c)} during the tournament`);}
+        if(pre!==null)bits.push(`started with ${fmt(pre)}`);
+      }else if(phase==="restock"){
+        if(post===null){bits.push("No post-tournament count yet");}
+        else{const after=post+(c||0);
+          if(c===null&&after>=t){k="ok";bits.push(t?`Already full (${fmt(post)} in box)`:"Counted");}
+          else if(c===null){k="flag";bits.push(`Add ${qty(it,t-post)} to fill (${fmt(post)} in box)`);}
+          else if(after>=t){k="ok";bits.push(`Full, ${fmt(after)} in box`);}
+          else{k="flag";bits.push(`Still short ${qty(it,t-after)} (${fmt(after)} in box)`);}}
+      }else if(c!==null){ if(!t){k="ok";bits.push("Counted");} else if(c<t){k="flag";bits.push(`Restock ${qty(it,t-c)}`);} else {k="ok";bits.push("Full");} }
+      if(phase==="post"&&pre!==null){bits.push(`started with ${fmt(pre)}`);if(rf)bits.push(`refilled ${fmt(rf)}`);if(c!==null)bits.push(`used ${fmt(Math.max(0,pre+(rf||0)-c))}`);}
       if(phase==="pre"&&c===null&&tid!==LEGACY){const prev=boxState(bid,it.id,tid);if(prev)bits.push(`last count ${fmt(prev.v)} after ${sessName(prev.tid)}`);}
       msg=bits.join(", ");if(msg)msg=msg[0].toUpperCase()+msg.slice(1);
     }
@@ -820,7 +864,9 @@ function updateRows(skipRow){
     s.style.display=(s.classList.contains("extra-grp")&&L.filter==="all"&&!ql)||s.querySelectorAll(".item:not(.hide)").length?"":"none";
   });
   const total=Math.max(1,ok+fl+todo);
-  const tl=$("#tally");if(tl)tl.textContent=`${ok+fl} of ${ok+fl+todo} counted, ${fl} ${isExcessLoc(loc)?"short":"to restock"}`;
+  const tl=$("#tally");if(tl)tl.textContent=phase==="refill"?`${ok} item${ok===1?"":"s"} refilled during the tournament`
+    :phase==="restock"?`${ok} of ${ok+fl+todo} full, ${fl} still short${todo?`, ${todo} not counted post-tournament`:""}`
+    :`${ok+fl} of ${ok+fl+todo} counted, ${fl} ${isExcessLoc(loc)?"short":"to restock"}`;
   const m=$("#meter");if(m){m.children[0].style.width=(ok/total*100)+"%";m.children[1].style.width=(fl/total*100)+"%";}
 }
 /* items grouped by category; the Extra supplies group always shows so anyone can add one */
@@ -849,25 +895,48 @@ function wireChips(){main().querySelectorAll(".chips button").forEach(b=>b.oncli
   main().querySelectorAll(".chips button").forEach(x=>x.setAttribute("aria-pressed",x===b));updateRows();});}
 
 /* ---------- clearing ---------- */
-const phaseName=p=>p==="pre"?"pre-tournament":"post-tournament";
+/* Box counts per tournament: pre (start), refill (added from excess during the tournament),
+   post (left at the end), restock (added afterward to get ready for the next tournament).
+   Used = pre + refills - post. Excess counts only have pre and post. */
+const PH={pre:["Pre","pre-tournament"],refill:["Refills","refill"],post:["Post","post-tournament"],restock:["Restock","restock"]};
+const BOX_PHASES=["pre","refill","post","restock"],EXCESS_PHASES=["pre","post"];
+const phaseName=p=>(PH[p]||PH.post)[1];
+const phaseShort=p=>(PH[p]||PH.post)[0];
+const boxPhase=id=>BOX_PHASES.includes(L.phase[id])?L.phase[id]:"post";
+const excessPhase=()=>EXCESS_PHASES.includes(L.phase.excess)?L.phase.excess:"post";
 /* "Save and complete": stored as a count row (item _done, in the phase it locks) so it syncs for everyone without admin rights.
    The pre- and post-tournament counts lock separately. */
 const LOCK="_done";
-const lockedAt=(loc,ph)=>get(loc,LOCK,ph);
+const lockedAt=(loc,ph)=>get(loc,LOCK,ph==="refill"?"post":ph);
 const isLocked=(loc,ph)=>lockedAt(loc,ph)!==null;
 function lockBannerHTML(loc,ph){
   if(!isLocked(loc,ph))return "";
   const d=new Date(lockedAt(loc,ph));
-  return `<div class="done"><span>✓ ${ph==="pre"?"Pre":"Post"}-tournament count completed ${esc(d.toLocaleDateString(undefined,{month:"short",day:"numeric"}))}. It’s locked.</span>${isAdmin()?`<button class="link" id="reopen">Reopen</button>`:""}</div>`;
+  return `<div class="done"><span>✓ ${ph==="refill"?"Refills locked with the post-tournament count, completed":ph==="restock"?"Restock completed":`${phaseShort(ph)}-tournament count completed`} ${esc(d.toLocaleDateString(undefined,{month:"short",day:"numeric"}))}. It’s locked.</span>${isAdmin()?`<button class="link" id="reopen">Reopen</button>`:""}</div>`;
 }
 function completeHTML(loc,ph){
   if(isLocked(loc,ph))return "";
+  if(ph==="refill")return `<p class="hint" style="margin:0 4px 8px">Refills lock when the post-tournament count is completed.</p>`;
   return `<button class="btn primary complete" id="complete">Save and complete ${phaseName(ph)} count</button>`;
 }
 /* post-tournament: start from the pre-tournament numbers, filling only items without a post count */
 function copyPreHTML(loc,ph,list){
   if(ph!=="post"||isLocked(loc,"post")||!list.some(it=>get(loc,it.id,"pre")!==null))return "";
   return `<button class="btn ghost sm" id="copypre" style="width:100%;margin-top:10px">Copy pre-tournament counts</button>`;
+}
+function fillHTML(loc,ph,list){
+  if(ph!=="restock"||isLocked(loc,"restock")||!list.some(it=>get(loc,it.id,"post")!==null))return "";
+  return `<button class="btn ghost sm" id="fillall" style="width:100%;margin-top:10px">Fill everything to full</button>`;
+}
+function wireFill(loc,list){
+  const b=$("#fillall");if(!b)return;
+  b.onclick=async()=>{
+    const fill=list.filter(it=>{const p=get(loc,it.id,"post");return p!==null&&get(loc,it.id,"restock")===null&&target(it)>p;});
+    if(!fill.length){toast("Nothing left to fill. Change any amount by hand.");return;}
+    if(!await confirmDlg("Fill everything to full?",`Enters what ${fill.length} item${fill.length>1?"s need":" needs"} to be full. Lower any amount you couldn’t fully restock so the box shows what’s still short. Amounts already entered aren’t changed.`,"Fill to full"))return;
+    fill.forEach(it=>setCount(loc,it.id,"restock",fmt(target(it)-get(loc,it.id,"post"))));
+    updateRows();toast(`Filled ${fill.length} item${fill.length>1?"s":""}`);
+  };
 }
 function wireCopyPre(loc,list){
   const b=$("#copypre");if(!b)return;
@@ -883,9 +952,10 @@ function wireCopyPre(loc,list){
 function wireComplete(loc,ph,what,where,list){
   const c=$("#complete");
   if(c)c.onclick=async()=>{
-    const left=list.filter(it=>get(loc,it.id,ph)===null).length;
-    if(!await confirmDlg(`Complete ${what}’s ${phaseName(ph)} count?`,`${left?`${left} item${left>1?"s have":" has"} no ${phaseName(ph)} count yet. `:""}This saves and locks the ${phaseName(ph)} count for ${what} at ${where}, for everyone.${isAdmin()?"":" Only an admin can reopen it."}`,"Save and complete"))return;
-    setCount(loc,LOCK,ph,Date.now());clearTimeout(flushTimer);flush();render();toast(`${ph==="pre"?"Pre":"Post"}-tournament count saved and completed`);
+    const left=ph==="restock"?list.filter(it=>get(loc,it.id,"post")!==null&&get(loc,it.id,"restock")===null&&target(it)>get(loc,it.id,"post")).length
+      :list.filter(it=>get(loc,it.id,ph)===null).length;
+    if(!await confirmDlg(`Complete ${what}’s ${phaseName(ph)} count?`,`${left?ph==="restock"?`${left} item${left>1?"s are":" is"} short with nothing entered as added. `:`${left} item${left>1?"s have":" has"} no ${phaseName(ph)} count yet. `:""}This saves and locks the ${phaseName(ph)} count for ${what} at ${where}, for everyone.${isAdmin()?"":" Only an admin can reopen it."}`,"Save and complete"))return;
+    setCount(loc,LOCK,ph,Date.now());clearTimeout(flushTimer);flush();render();toast(`${ph==="restock"?"Restock":phaseShort(ph)+"-tournament count"} saved and completed`);
   };
   const r=$("#reopen");
   if(r)r.onclick=async()=>{
@@ -894,10 +964,10 @@ function wireComplete(loc,ph,what,where,list){
   };
 }
 async function clearPhase(loc,phase,what,where){
-  const keys=Object.keys(L.counts).filter(k=>k.startsWith(loc+"|")&&k.endsWith("|"+phase));
+  const keys=Object.keys(L.counts).filter(k=>k.startsWith(loc+"|")&&k.endsWith("|"+phase)&&k.split("|")[1]!==LOCK);
   if(!keys.length){toast(`No ${phaseName(phase)} counts to clear`);return;}
   if(!await confirmDlg(`Clear ${what}’s ${phaseName(phase)} count?`,
-    `This erases ${keys.length} ${phaseName(phase)} count${keys.length>1?"s":""} for ${what} at ${where}, for everyone. The ${phaseName(phase==="pre"?"post":"pre")} count and other boxes aren’t affected.`,"Clear counts"))return;
+    `This erases ${keys.length} ${phaseName(phase)} count${keys.length>1?"s":""} for ${what} at ${where}, for everyone. Other counts and boxes aren’t affected.`,"Clear counts"))return;
   keys.forEach(k=>{const item=k.split("|")[1];setCount(loc,item,phase,null);});
   updateRows();toast("Counts cleared");
 }
@@ -914,29 +984,32 @@ function renderBox(id){
     return;
   }
   const t=tourById(tid);
-  const ph=L.phase[id]||"post";
+  const ph=boxPhase(id);
   const loc=sessLoc(tid,id);
+  const HINT={pre:"Starting inventory before the tournament. Tap the pink amount if an item is full.",
+    refill:"Anything moved from excess into this box during the tournament. Enter how many were added so usage isn’t hidden when the box gets topped off.",
+    post:"What’s left after the tournament. Used = pre + refills − post.",
+    restock:"After the post-tournament count, enter what you added to get the box ready for the next tournament. Tap the pink + amount to fill an item to full."};
   main().innerHTML=`<div class="card boxcard" style="--bc:${boxColor(id)}">
       <label class="field tsel">${curOrg()} tournament<select id="tsel">${tourOptions(tid,true,curOrg())}</select></label>
       ${t?`<p class="sub" style="margin-top:6px">${[t.date?fmtDate(t.date):"Date not set",courtsText(t),`${num(t.days)} days`].join(", ")}</p>`:""}
       <div class="boxtitle" style="margin-top:14px">${dot(id)}<h2>${esc(boxName(id))}</h2></div>
       <div class="seg" role="group" aria-label="Count type">
-        <button data-p="pre" aria-pressed="${ph==="pre"}">Pre-tournament</button>
-        <button data-p="post" aria-pressed="${ph==="post"}">Post-tournament</button>
+        ${BOX_PHASES.map(p=>`<button data-p="${p}" aria-pressed="${ph===p}">${phaseShort(p)}${isLocked(loc,p)&&p!=="refill"?" ✓":""}</button>`).join("")}
       </div>
-      <p class="hint">${ph==="pre"?"Starting inventory before the tournament. Tap the pink amount if an item is full.":"What’s left after the tournament. Usage is figured from the pre-tournament count."}</p>
+      <p class="hint">${HINT[ph]}</p>
       <div class="meter" id="meter"><i class="m-ok"></i><i class="m-flag"></i></div>
       <p class="hint" id="tally"></p>
-      ${chipsHTML("Restock")}
+      ${chipsHTML(ph==="restock"?"Still short":"Restock")}
       ${searchHTML("Search this box")}
-      ${copyPreHTML(loc,ph,boxItemsFor(id))}
-      ${isLocked(loc,ph)?lockBannerHTML(loc,ph):`<div class="row-between" style="margin-top:6px"><span></span><button class="link danger" id="newcount">Clear this box’s ${ph}-tournament count</button></div>`}
+      ${copyPreHTML(loc,ph,boxItemsFor(id))}${fillHTML(loc,ph,boxItemsFor(id))}
+      ${isLocked(loc,ph)?lockBannerHTML(loc,ph):`<div class="row-between" style="margin-top:6px"><span></span><button class="link danger" id="newcount">Clear this box’s ${phaseName(ph)} ${ph==="refill"||ph==="restock"?"entries":"count"}</button></div>`}
     </div>${groupsHTML(boxItemsFor(id),true,false)}${completeHTML(loc,ph)}`;
   $("#tsel").onchange=e=>{pickTour(e.target.value);render();};
-  main().querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{L.phase[id]=b.dataset.p;persist();renderCtx();renderBox(id);});
+  main().querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{L.phase[id]=b.dataset.p;L.filter="all";persist();renderCtx();renderBox(id);});
   if($("#newcount"))$("#newcount").onclick=()=>clearPhase(loc,ph,boxName(id),sessName(tid));
-  wireComplete(loc,ph,boxName(id),sessName(tid),boxItemsFor(id));wireCopyPre(loc,boxItemsFor(id));
-  wireChips();wireRows(loc,()=>L.phase[id]||"post");wireAddExtra(true);wireSearch(()=>updateRows());updateRows();
+  wireComplete(loc,ph,boxName(id),sessName(tid),boxItemsFor(id));wireCopyPre(loc,boxItemsFor(id));wireFill(loc,boxItemsFor(id));
+  wireChips();wireRows(loc,()=>boxPhase(id));wireAddExtra(true);wireSearch(()=>updateRows());updateRows();
 }
 /* ---------- extra supplies ---------- */
 function wireAddExtra(fromBox){
@@ -1046,7 +1119,7 @@ function renderExcess(){
   const tid=curTour();
   if(!tid){rowCtx=null;
     main().innerHTML=`<div class="card"><h2>${curOrg()} excess inventory</h2><p class="sub">Excess counts are logged by tournament. ${isAdmin()?"Add your tournaments in Setup to start logging.":"Ask your admin to add tournaments in Setup."}</p></div>`;return;}
-  const ph=L.phase.excess||"post";const org=curOrg();const loc=excessSessLoc(tid,org);
+  const ph=excessPhase();const org=curOrg();const loc=excessSessLoc(tid,org);
   const G=nextGroup();
   main().innerHTML=`<div class="card">
     <label class="field tsel">${org} tournament<select id="tsel">${tourOptions(tid,true,org)}</select></label>
@@ -1061,13 +1134,84 @@ function renderExcess(){
     ${chipsHTML("Short")}
     ${searchHTML("Search excess supplies")}
     ${copyPreHTML(loc,ph,excessItemsAll())}
-    ${isLocked(loc,ph)?lockBannerHTML(loc,ph):`<div class="row-between" style="margin-top:6px"><span></span><button class="link danger" id="newcount">Clear the excess ${ph}-tournament count</button></div>`}
+    ${isLocked(loc,ph)?lockBannerHTML(loc,ph):`<div class="row-between" style="margin-top:6px"><span></span><button class="link danger" id="newcount">Clear the excess ${phaseName(ph)} count</button></div>`}
   </div>${groupsHTML(items(),false,true)}${completeHTML(loc,ph)}`;
   $("#tsel").onchange=e=>{pickTour(e.target.value);render();};
   main().querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{L.phase.excess=b.dataset.p;persist();renderCtx();renderExcess();});
   if($("#newcount"))$("#newcount").onclick=()=>clearPhase(loc,ph,`${org} excess`,sessName(tid));
   wireComplete(loc,ph,`${org} excess`,sessName(tid),excessItemsAll());wireCopyPre(loc,excessItemsAll());
-  wireChips();wireRows(loc,()=>L.phase.excess||"post");wireAddExtra(false);wireSearch(()=>updateRows());updateRows();
+  wireChips();wireRows(loc,()=>excessPhase());wireAddExtra(false);wireSearch(()=>updateRows());updateRows();
+}
+
+/* ---------- overview tab ---------- */
+/* where a box stands for a tournament: which steps are counted/completed */
+function boxSteps(tid,bid){
+  const loc=sessLoc(tid,bid),list=boxItemsFor(bid);
+  return BOX_PHASES.map(ph=>({ph,n:list.filter(it=>get(loc,it.id,ph)!==null).length,done:ph!=="refill"&&isLocked(loc,ph)}));
+}
+function latestSession(bid){let last=null;sessions().forEach(s=>{if(sessionHasCounts(s,bid))last=s;});return last;}
+function readinessHTML(b){
+  const last=latestSession(b.id);
+  const short=boxItemsFor(b.id).filter(it=>shortfall(b.id,it)>0).length,never=uncounted(b.id);
+  let status="Not counted yet",cls="warn";
+  if(last){const st=boxSteps(last,b.id),by=Object.fromEntries(st.map(x=>[x.ph,x]));
+    if(by.restock.done||by.restock.n){status=`Restocked after ${sessName(last)}`;cls=short?"warn":"on";}
+    else if(by.post.n){status=`Post-tournament counted at ${sessName(last)}, not restocked`;cls="warn";}
+    else if(by.pre.n){status=`Pre-tournament counted at ${sessName(last)}`;cls="";}}
+  return `<details class="rdy"><summary><span><b>${dot(b.id)}${esc(b.name)}</b><br><span class="pill ${cls}">${esc(status)}</span></span>
+    ${last?`<span class="pill ${short?"warn":"on"}">${short?`${short} short`:"Full"}</span>`:""}</summary>
+    ${shortList(b.id)}${never?`<p class="warn">${never} item${never>1?"s":""} never counted</p>`:""}</details>`;
+}
+/* tournaments of this org with any usage recorded, oldest first */
+function usageTours(org){return sessions(org).filter(tid=>tid!==LEGACY).filter(tid=>excessItemsAll().some(it=>usedAt(tid,org,it.id)!==null));}
+const shortName=tid=>{const t=tourById(tid);return t?`${t.name}${t.date?` ${fmtDate(t.date).replace(/,? \d{4}$/,"")}`:""}`:sessName(tid);};
+const totalCourts=t=>locCourts(t).reduce((a,c)=>a+(c||0),0);
+function usageMatrix(org,n){
+  let T=usageTours(org);if(n)T=T.slice(-n);
+  const rows=excessItemsAll().map(it=>{const v=T.map(tid=>usedAt(tid,org,it.id));const got=v.filter(x=>x!==null);
+    const tot=got.reduce((a,b)=>a+b,0);const courts=T.reduce((a,tid,i)=>a+(v[i]!==null?totalCourts(tourById(tid)||{}):0),0);
+    return {it,v,tot:fmt(tot),avg:got.length?fmt(tot/got.length):null,perCourt:courts?Math.round(tot/courts*100)/10:null};}).filter(r=>r.tot>0);
+  return {T,rows};
+}
+function renderOverview(){
+  const org=curOrg(),G=nextGroup(),A=isAdmin();
+  const B=boxes();const shortBoxes=B.filter(b=>!latestSession(b.id)||boxItemsFor(b.id).some(it=>shortfall(b.id,it)>0)).length;
+  const exShort=G.length?orderRows(G).filter(r=>r.order>0):[];
+  let h=`<div class="card"><h2>${org} overview</h2>
+    <p class="sub">${G.length?`Next: ${esc(G.map(tourLabel).join(" and "))}, ${esc(G.map(courtsText).join("; "))}.`:"No upcoming tournaments with dates."}</p>
+    <div class="stat"><div><b>${B.length-shortBoxes}/${B.length}</b><span>boxes full</span></div>
+      <div><b>${exShort.length}</b><span>items to order for the next tournament</span></div>
+      ${A?`<div><b>${usageTours(org).length}</b><span>tournaments with usage logged</span></div>`:""}</div>
+    ${searchHTML("Search items")}<p class="empty" id="q-none" hidden>No matching items.</p></div>`;
+  h+=`<div class="card" data-qgroup><h3>Box readiness</h3><p class="sub">Each box’s latest count, including what was restocked afterward. Tap a box for what it’s short.</p>${B.map(readinessHTML).join("")||`<p class="empty">No boxes.</p>`}</div>`;
+  h+=`<div class="card" data-qgroup><h3>Order for the next tournament</h3>${G.length?(exShort.length?`<ul class="mini">${exShort.map(r=>`<li data-q="${esc(r.it.name)}"><span>${esc(r.it.name)}${HS[r.it.id]?` <span class="note">#${HS[r.it.id][0]}</span>`:""}</span><b>${esc(qty(r.it,r.order))}</b></li>`).join("")}</ul>`:`<p class="empty">Excess covers everything needed.</p>`)+`<button class="btn ghost sm" id="go-restock" style="margin-top:10px">Open Restock for the Henry Schein order</button>`:`<p class="empty">Set tournament dates in Setup.</p>`}</div>`;
+  if(A){
+    const n=num(L.uN)||0;const M=usageMatrix(org,n);
+    h+=`<div class="card" data-qgroup><div class="row-between"><h3 style="margin:0">Usage by item</h3>
+      <select id="uN" style="border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:var(--bg)">${[[3,"Last 3 tournaments"],[5,"Last 5"],[0,"All tournaments"]].map(([v,l])=>`<option value="${v}" ${n===v?"selected":""}>${l}</option>`).join("")}</select></div>
+      <p class="sub" style="margin-top:6px">What was used at each tournament, boxes and excess combined. Box usage = pre + refills − post. Excess usage leaves out what went into boxes. Admins only.</p>
+      ${M.T.length?`<div class="tw" style="margin-top:10px"><table class="t wide"><thead><tr><th>Item</th>${M.T.map(tid=>`<th class="n">${esc(shortName(tid))}</th>`).join("")}<th class="n">Avg</th><th class="n">Per 10 courts</th></tr></thead><tbody>
+        ${M.rows.map(r=>`<tr data-q="${esc(r.it.name+" "+catOf(r.it))}"><td>${esc(r.it.name)}<span class="note">${esc(unitPlural(r.it))}</span></td>${r.v.map(x=>`<td class="n ${x?"":"zero"}">${x===null?"–":fmt(x)}</td>`).join("")}<td class="n"><b>${r.avg??"–"}</b></td><td class="n">${r.perCourt??"–"}</td></tr>`).join("")}
+      </tbody></table></div><p class="hint">“–” means that tournament is missing a pre or post count for the item. Per 10 courts uses the courts entered for those tournaments.</p>
+      <button class="btn ghost sm" id="u-csv" style="margin-top:10px">Download usage (CSV)</button>`
+      :`<p class="empty">No usage yet. Usage shows once a tournament has both pre- and post-tournament counts.</p>`}</div>`;
+    const T=sessions(org).filter(tid=>tid!==LEGACY&&(B.some(b=>sessionHasCounts(tid,b.id))||excessItemsAll().some(it=>get(excessSessLoc(tid,org),it.id,"pre")!==null||get(excessSessLoc(tid,org),it.id,"post")!==null)));
+    const mark=(loc,ph,has)=>isLocked(loc,ph)?`<span class="pill on">${phaseShort(ph)} ✓</span>`:has?`<span class="pill">${phaseShort(ph)}</span>`:`<span class="pill warn">${phaseShort(ph)} –</span>`;
+    h+=`<div class="card" data-qgroup><h3>Count log</h3><p class="sub">Which counts were entered (grey) and completed (✓) for each tournament. Admins only.</p>
+      ${T.length?[...T].reverse().map(tid=>{const t=tourById(tid);const xl=excessSessLoc(tid,org);
+        return `<p class="bhead" style="margin-top:14px">${esc(t?tourLabel(t):sessName(tid))}</p><ul class="mini">${B.filter(b=>sessionHasCounts(tid,b.id)||((t&&t.boxes)||[]).includes(b.id)).map(b=>{const st=boxSteps(tid,b.id);
+          return `<li data-q="${esc(b.name+" "+(t?t.name:""))}"><span>${dot(b.id)}${esc(b.name)}</span><span>${st.filter(x=>x.ph!=="refill").map(x=>mark(sessLoc(tid,b.id),x.ph,x.n)).join("")}${st[1].n?`<span class="pill">${st[1].n} refilled</span>`:""}</span></li>`;}).join("")}
+          <li data-q="excess"><span>Excess</span><span>${EXCESS_PHASES.map(ph=>mark(xl,ph,excessItemsAll().some(it=>get(xl,it.id,ph)!==null))).join("")}</span></li></ul>`;}).join("")
+        :`<p class="empty">No counts yet.</p>`}</div>`;
+  }else h+=`<div class="card"><p class="hint" style="margin:0">Usage history and the count log are available to admins in this tab.</p></div>`;
+  main().innerHTML=h;
+  if($("#go-restock"))$("#go-restock").onclick=()=>{L.tab="restock";L.plan="all";persist();render();window.scrollTo({top:0});};
+  if($("#uN"))$("#uN").onchange=e=>{L.uN=num(e.target.value);persist();renderOverview();};
+  if($("#u-csv"))$("#u-csv").onclick=()=>{const M=usageMatrix(org,0);
+    const o=[["Item","Category","Unit",...M.T.map(tid=>{const t=tourById(tid);return `${t?t.name:sessName(tid)}${t&&t.date?" ("+t.date+")":""}`;}),"Total","Average per tournament","Per 10 courts"],
+      ...M.rows.map(r=>[r.it.name,catOf(r.it),unitPlural(r.it),...r.v.map(x=>x??""),r.tot,r.avg??"",r.perCourt??""])];
+    saveFile(`${org.toLowerCase()}-usage-${stamp()}.csv`,"\ufeff"+o.map(r=>r.map(csvCell).join(",")).join("\r\n"),"text/csv;charset=utf-8");};
+  wireSearch(applySearch);applySearch();
 }
 
 /* ---------- restock tab ---------- */
@@ -1356,21 +1500,23 @@ function saveFile(name,data,type){
 const csvCell=v=>{v=String(v??"");return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v;};
 function boxRows(tid,bid){
   const loc=sessLoc(tid,bid);
-  return boxItemsFor(bid).map(it=>{const pre=get(loc,it.id,"pre"),post=get(loc,it.id,"post"),t=target(it),cur=post!==null?post:pre;
-    return {it,full:t,pre,post,used:pre!==null&&post!==null?fmt(Math.max(0,pre-post)):"",restock:cur!==null&&cur<t?fmt(t-cur):""};});
+  return boxItemsFor(bid).map(it=>{const pre=get(loc,it.id,"pre"),refill=get(loc,it.id,"refill"),post=get(loc,it.id,"post"),added=get(loc,it.id,"restock"),t=target(it);
+    const after=post!==null?post+(added||0):pre;const u=boxUsed(tid,bid,it.id);
+    return {it,full:t,pre,refill,post,added,used:u===null?"":u,after:after??"",short:after!==null&&after<t?fmt(t-after):""};});
 }
-const sessionHasCounts=(tid,bid)=>boxItemsFor(bid).some(it=>get(sessLoc(tid,bid),it.id,"pre")!==null||get(sessLoc(tid,bid),it.id,"post")!==null);
+const sessionHasCounts=(tid,bid)=>boxItemsFor(bid).some(it=>BOX_PHASES.some(ph=>get(sessLoc(tid,bid),it.id,ph)!==null));
 function buildCSV(){
   const o=[];
   o.push(["Medical Supply Inventory"],["Exported",new Date().toLocaleString(),"By",L.name||""],[]);
-  o.push(["Tournament history"],["Organization","Tournament","Start date","Box","Section","Item","Unit","Full box","Pre count","Post count","Used","Restock"]);
+  o.push(["Tournament history"],["Organization","Tournament","Start date","Box","Section","Item","Unit","Full box","Pre count","Refills","Post count","Used","Restocked","In box after restock","Still short"]);
   ORGS.forEach(org=>sessions(org).forEach(tid=>{const t=tourById(tid);
     boxes(org).forEach(b=>{if(!sessionHasCounts(tid,b.id))return;
-      boxRows(tid,b.id).forEach(r=>o.push([org,t?t.name:sessName(tid),t?t.date:"",b.name,secTitle(r.it),r.it.name,unitPlural(r.it),r.full,r.pre??"",r.post??"",r.used,r.restock]));});
+      boxRows(tid,b.id).forEach(r=>o.push([org,t?t.name:sessName(tid),t?t.date:"",b.name,secTitle(r.it),r.it.name,unitPlural(r.it),r.full,r.pre??"",r.refill??"",r.post??"",r.used,r.added??"",r.after,r.short]));});
     const xl=excessSessLoc(tid,org);
     if(excessItemsAll().some(it=>get(xl,it.id,"pre")!==null||get(xl,it.id,"post")!==null))
       excessItemsAll().forEach(it=>{const pre=get(xl,it.id,"pre"),post=get(xl,it.id,"post");if(pre===null&&post===null)return;
-        o.push([org,t?t.name:sessName(tid),t?t.date:"","Excess",secTitle(it),it.name,unitPlural(it),"",pre??"",post??"",pre!==null&&post!==null?fmt(Math.max(0,pre-post)):"",""]);});
+        const ux=excessUsed(tid,org,it.id),rb=tid===LEGACY?0:toBoxes(tid,org,it.id,"refill");
+        o.push([org,t?t.name:sessName(tid),t?t.date:"","Excess",secTitle(it),it.name,unitPlural(it),"",pre??"",rb?-rb:"",post??"",ux??"","","",""]);});
   }));
   o.push([],["Tournaments"],["Organization","Tournament","Start date","AT locations","Days","Boxes"]);
   sortedTours().forEach(t=>o.push([tourOrg(t),t.name,t.date,courtsText(t),num(t.days),(t.boxes||[]).map(boxName).join("; ")]));
@@ -1401,8 +1547,8 @@ function buildPDF(){
   if(tid){
     const bx=curBoxes().filter(b=>sessionHasCounts(tid,b.id)||((t&&t.boxes)||[]).includes(b.id));
     bx.forEach(b=>{H(boxName(b.id));
-      tbl(["Item","Full box","Pre","Post","Used","Restock"],boxRows(tid,b.id).map(r=>[r.it.name,qty(r.it,r.full),r.pre??"-",r.post??"-",r.used,r.restock]),
-        {columnStyles:{2:center,3:center,4:center,5:{halign:"center",fontStyle:"bold",textColor:[192,57,30]}}});});
+      tbl(["Item","Full box","Pre","Refills","Post","Used","Restocked","Short"],boxRows(tid,b.id).map(r=>[r.it.name,qty(r.it,r.full),r.pre??"-",r.refill??"",r.post??"-",r.used,r.added??"",r.short]),
+        {columnStyles:{2:center,3:center,4:center,5:center,6:center,7:{halign:"center",fontStyle:"bold",textColor:[192,57,30]}}});});
   }
   H(`${curOrg()} order list (all upcoming ${curOrg()} tournaments)`);
   const O=orderRows(upcoming());
